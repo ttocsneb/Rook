@@ -44,6 +44,7 @@ public class DragDrop : MonoBehaviour
         if (isOverDropZone)
         {
             transform.SetParent(dropZone.transform, false);
+            transform.rotation = Quaternion.Euler(x: 0, y:0,z:0);
         }
         else
         {
