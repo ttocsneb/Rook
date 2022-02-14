@@ -1,4 +1,7 @@
 [![Wiki](https://img.shields.io/badge/Wiki-Rook-lightgrey)](https://github.com/cs428TAs/w2022/wiki/Rook)
+[![GitHub milestone](https://img.shields.io/github/milestones/progress-percent/ttocsneb/Rook/1)](https://github.com/ttocsneb/Rook/milestone/1)
+[![GitHub milestone](https://img.shields.io/github/milestones/progress-percent/ttocsneb/Rook/3)](https://github.com/ttocsneb/Rook/milestone/3)
+[![GitHub milestone](https://img.shields.io/github/milestones/progress-percent/ttocsneb/Rook/2)](https://github.com/ttocsneb/Rook/milestone/2)
 
 # Rook
 The amazing Rook Card Game!
