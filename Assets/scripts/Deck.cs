@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Deck : MonoBehaviour
 {
@@ -10,8 +11,15 @@ public class Deck : MonoBehaviour
     public GameObject hand2;
     public GameObject hand3;
     public GameObject hand4;
+    public GameObject dropZone;
+    public GameObject canvas;
+    public bool showAllCards = false;
 
     private readonly List<CardData> deck = new List<CardData>();
+    private readonly List<GameObject> cards = new List<GameObject>();
+
+    private CardColor trickColor = CardColor.NONE;
+    private CardColor trumpColor = CardColor.NONE;
 
     private class CardData
     {
@@ -29,7 +37,6 @@ public class Deck : MonoBehaviour
     void Start()
     {
         Restock();
-        Shuffle();
     }
 
     public bool CanDraw()
@@ -43,14 +50,54 @@ public class Deck : MonoBehaviour
         if (deck.Count == 0)
         {
             Debug.Log("No more cards");
+            Image i = gameObject.GetComponent<Image>();
+            i.color = new Color32(255, 255, 255, 0);
             return null;
         }
         CardData toInit = deck[deck.Count - 1];
         deck.RemoveAt(deck.Count - 1);
         GameObject obj = Instantiate(card, new Vector2(0, 0), rotation);
+        DragDrop dd = obj.GetComponent<DragDrop>();
+        dd.Canvas = canvas;
+        dd.DropZone = dropZone;
         Card c = obj.GetComponent<Card>();
+        c.deck = this;
         c.SetCard(toInit.color, toInit.number);
+        if (showAllCards)
+        {
+            c.SetVisible(true);
+        }
+        c.SetTrump(trumpColor);
+        c.SetPlayable(trickColor);
+        cards.Add(obj);
         return obj;
+    }
+
+    public void SetTrickColor(CardColor color)
+    {
+        trickColor = color;
+
+        foreach (GameObject card in cards)
+        {
+            Card c = card.GetComponent<Card>();
+            c.SetPlayable(trickColor);
+        }
+    }
+
+    public void SetTrumpColor(CardColor color)
+    {
+        trumpColor = color;
+
+        foreach (GameObject card in cards)
+        {
+            Card c = card.GetComponent<Card>();
+            c.SetTrump(trumpColor);
+        }
+    }
+
+    public void RemoveFromDeck(GameObject card)
+    {
+        cards.Remove(card);
     }
 
     // Deal 1 card to each player
@@ -61,6 +108,7 @@ public class Deck : MonoBehaviour
         {
             return;
         }
+        card1.GetComponent<Card>().SetVisible(true);
         card1.transform.SetParent(hand1.transform, false);
         GameObject card2 = Draw(Quaternion.Euler(x:0, y:0, z:90));
         if (card2 == null)
@@ -102,13 +150,18 @@ public class Deck : MonoBehaviour
     // otherwise duplicates will be created
     public void Restock()
     {
+        while (cards.Count > 0)
+        {
+            cards[0].GetComponent<Card>().Remove();
+        }
+
         deck.Clear();
         CardColor color = CardColor.GREEN;
         for (int i = 1; i <= 14; ++i)
         {
             deck.Add(new CardData(color, i));
         }
-        color = CardColor.ORANGE;
+        color = CardColor.YELLOW;
         for (int i = 1; i <= 14; ++i)
         {
             deck.Add(new CardData(color, i));
@@ -124,6 +177,9 @@ public class Deck : MonoBehaviour
             deck.Add(new CardData(color, i));
         }
         deck.Add(new CardData(CardColor.ROOK, 1));
+        Image im = gameObject.GetComponent<Image>();
+        im.color = new Color32(255, 255, 255, 255);
+        Shuffle();
     }
 
     // Update is called once per frame

@@ -70,7 +70,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 7024648501981196136, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -93,8 +93,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   texture: {fileID: 2800000, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
+  back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
   width: 7
   height: 9
+  greenPosition: 0
+  yellowPosition: 14
+  redPosition: 28
+  blackPosition: 42
+  rookPosition: 56
 --- !u!114 &7991549428748399101
 MonoBehaviour:
   m_ObjectHideFlags: 0

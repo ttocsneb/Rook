@@ -173,6 +173,9 @@ TextureImporter:
   - first:
       213: 6695866666733809117
     second: cards_56
+  - first:
+      213: 9164874825317427162
+    second: cards_57
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -1454,6 +1457,27 @@ TextureImporter:
       bones: []
       spriteID: ddd2c06d14f7cec50800000000000000
       internalID: 6695866666733809117
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: cards_57
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 32
+        height: 42
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: ad727f5981d203f70800000000000000
+      internalID: 9164874825317427162
       vertices: []
       indices: 
       edges: []
