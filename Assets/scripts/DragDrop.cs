@@ -15,8 +15,7 @@ public class DragDrop : MonoBehaviour
 
     void Start()
     {
-        Canvas = GameObject.Find("Main Canvas");
-        DropZone = GameObject.Find("DropZone");
+
     }
 
     private void OnCollisionEnter2D(Collision2D collision) 
@@ -36,6 +35,7 @@ public class DragDrop : MonoBehaviour
         isDragging = true;
         startParent = transform.parent.gameObject;
         startPosition = transform.position;
+        transform.SetParent(Canvas.transform, true);
     }
 
     public void endDrag()
@@ -43,14 +43,15 @@ public class DragDrop : MonoBehaviour
         isDragging = false;
         if (isOverDropZone)
         {
-            transform.SetParent(dropZone.transform, false);
-            transform.rotation = Quaternion.Euler(x: 0, y:0,z:0);
+            DropZone dz = dropZone.GetComponent<DropZone>();
+            bool success = dz.Drop(gameObject);
+            if (success)
+            {
+                return;
+            }
         }
-        else
-        {
-            transform.position = startPosition;
-            transform.SetParent(startParent.transform, false);
-        }
+        transform.position = startPosition;
+        transform.SetParent(startParent.transform, false);
     }
 
     void Update()
@@ -58,7 +59,6 @@ public class DragDrop : MonoBehaviour
         if (isDragging)
         {
             transform.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
-            transform.SetParent(Canvas.transform, true);
         }
     }
 }
