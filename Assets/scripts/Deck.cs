@@ -13,6 +13,7 @@ public class Deck : MonoBehaviour
     public GameObject hand4;
     public GameObject dropZone;
     public GameObject canvas;
+    public GameObject kitty;
     public bool showAllCards = false;
 
     private readonly List<CardData> deck = new List<CardData>();
@@ -100,6 +101,15 @@ public class Deck : MonoBehaviour
         cards.Remove(card);
     }
 
+    public void DealAll() 
+    {
+        int cardsPerHand = 13;
+        for (int i = 0; i < cardsPerHand + 1; i++)
+        {
+            Deal();
+        }
+    }
+
     // Deal 1 card to each player
     public void Deal()
     {
@@ -128,6 +138,15 @@ public class Deck : MonoBehaviour
             return;
         }
         card4.transform.SetParent(hand4.transform, false);
+        if (kitty.transform.childCount < 5)
+        {
+            GameObject card5 = Draw(Quaternion.Euler(x:0, y:0, z:0));
+            if (card5 == null)
+            {
+                return;
+            }
+            card5.transform.SetParent(kitty.transform, false);
+        }
     }
 
     // Shuffle the deck in place
