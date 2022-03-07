@@ -92,6 +92,8 @@ GameObject:
   - component: {fileID: 9169602970933510655}
   - component: {fileID: 9169602970933510654}
   - component: {fileID: 9169602970933510641}
+  - component: {fileID: 3640867669443536908}
+  - component: {fileID: -6398430005265966954}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -228,4 +230,57 @@ MonoBehaviour:
   Card1: {fileID: 413737977363784619, guid: 7e92250650c8f3149a7d24984622d614, type: 3}
   Card2: {fileID: 266600508965840940, guid: 95d1ac59c002b27449159f526d59398c, type: 3}
   PlayerArea: {fileID: 0}
-  EnemyArea: {fileID: 0}
+  EnemyArea_1: {fileID: 0}
+  EnemyArea_2: {fileID: 0}
+  EnemyArea_3: {fileID: 0}
+--- !u!114 &3640867669443536908
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9169602970933510643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  visible: 0
+  m_AssetId: 595b0898ad715314f9d053eccb7ea3e5
+  hasSpawned: 0
+--- !u!114 &-6398430005265966954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9169602970933510643}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f74aedd71d9a4f55b3ce499326d45fb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  clientAuthority: 0
+  sendInterval: 0.05
+  syncPosition: 1
+  syncRotation: 1
+  syncScale: 0
+  interpolatePosition: 1
+  interpolateRotation: 1
+  interpolateScale: 0
+  bufferTimeMultiplier: 1
+  bufferSizeLimit: 64
+  catchupThreshold: 4
+  catchupMultiplier: 0.1
+  onlySyncOnChange: 1
+  bufferResetMultiplier: 5
+  positionSensitivity: 0.01
+  rotationSensitivity: 0.01
+  scaleSensitivity: 0.01
+  showGizmos: 0
+  showOverlay: 0
+  overlayColor: {r: 0, g: 0, b: 0, a: 0.5}
