@@ -11,40 +11,60 @@ public enum GameState
     PLAY,
 }
 
-public class GameManager : NetworkBehaviour
+public enum CardAreas
 {
-    private readonly List<GameObject> deck_cards = new List<GameObject>();
-    private readonly List<GameObject> player0_cards = new List<GameObject>();
-    private readonly List<GameObject> player1_cards = new List<GameObject>();
-    private readonly List<GameObject> player2_cards = new List<GameObject>();
-    private readonly List<GameObject> player3_cards = new List<GameObject>();
-    private readonly List<GameObject> playarea_cards = new List<GameObject>();
-    private readonly List<GameObject> kitty_cards = new List<GameObject>();
+    PLAYER0,
+    PLAYER1,
+    PLAYER2,
+    PLAYER3,
+    KITTY,
+    DECK,
+}
 
-    private readonly List<GameObject> player0_tricks = new List<GameObject>();
-    private readonly List<GameObject> player1_tricks = new List<GameObject>();
-    private readonly List<GameObject> player2_tricks = new List<GameObject>();
-    private readonly List<GameObject> player3_tricks = new List<GameObject>();
+public class GameManager : NetworkManager
+{
+    public GameObject enemyArea1;
+    public GameObject enemyArea2;
+    public GameObject enemyArea3;
+    public GameObject playerArea;
+    
+    public GameObject dropArea;
+    public GameObject kittyArea;
 
     private int team0_score = 0;
     private int team1_score = 0;
-    private int player0_bid = 0;
-    private int player1_bid = 0;
-    private int player2_bid = 0;
-    private int player3_bid = 0;
+    private readonly int[] player_bids = new int[] {
+        0,
+        0,
+        0,
+        0
+    };
     private int current_turn = 0;
     private GameState game_state = GameState.SETUP;
 
+    private readonly List<NetworkConnection> players = new List<NetworkConnection>();
 
-    // Start is called before the first frame update
-    void Start()
-    {
+    [Server]
+    public void BeginGame() {
         
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void OnStartServer()
     {
-        
+        Debug.Log("Server Started");
+    }
+
+    public override void OnStopServer()
+    {
+        Debug.Log("Server Stopped");
+    }
+
+    public override void OnServerConnect(NetworkConnection conn)
+    {
+        Debug.Log("Connected to server");
+        players.Add(conn);
+        if (players.Count == 4) {
+            BeginGame();
+        }
     }
 }
