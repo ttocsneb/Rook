@@ -43,12 +43,12 @@ public class DragDrop : MonoBehaviour
         isDragging = false;
         if (isOverDropZone)
         {
-            DropZone dz = dropZone.GetComponent<DropZone>();
-            bool success = dz.Drop(gameObject);
-            if (success)
-            {
-                return;
-            }
+            // DropZone dz = dropZone.GetComponent<DropZone>();
+            // bool success = dz.Drop(gameObject);
+            // if (success)
+            // {
+            //     return;
+            // }
         }
         transform.position = startPosition;
         transform.SetParent(startParent.transform, false);

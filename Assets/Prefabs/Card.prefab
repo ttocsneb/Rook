@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 7991549428748399100}
   - component: {fileID: 7991549428748399091}
   - component: {fileID: 7991549428748399090}
+  - component: {fileID: 5441472560292560149}
   m_Layer: 7
   m_Name: Card
   m_TagString: Untagged
@@ -92,15 +93,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83754bbd2dc2b0b409a8e65e16118d2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
   texture: {fileID: 2800000, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
   back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
   width: 7
   height: 9
-  greenPosition: 0
-  yellowPosition: 14
-  redPosition: 28
-  blackPosition: 42
-  rookPosition: 56
+  deck: {fileID: 0}
+  greenStartIndex: 0
+  yellowStartIndex: 14
+  redStartIndex: 28
+  blackStartIndex: 42
+  rookIndex: 56
 --- !u!114 &7991549428748399101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207,3 +211,20 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 200, y: 263}
   m_EdgeRadius: 0
+--- !u!114 &5441472560292560149
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7991549428748399093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 0
+  serverOnly: 0
+  visible: 0
+  m_AssetId: 3d8dac2c62b882f4c9e979762995b774
+  hasSpawned: 0

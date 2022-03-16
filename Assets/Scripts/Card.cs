@@ -1,3 +1,4 @@
+using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -14,46 +15,36 @@ public enum CardColor
     ROOK,
 }
 
-public class Card : MonoBehaviour
+public class Card : NetworkBehaviour
 {
 
     public Texture2D texture;
     public Sprite back;
     public int width;
     public int height;
-    public Deck deck;
 
-    public int greenPosition = 0;
-    public int yellowPosition = 14;
-    public int redPosition = 28;
-    public int blackPosition = 42;
-    public int rookPosition = 56;
+    public static int greenStartIndex = 0;
+    public static int yellowStartIndex = 14;
+    public static int redStartIndex = 28;
+    public static int blackStartIndex = 42;
+    public static int rookIndex = 56;
 
     private Sprite front;
-
     private CardColor color = CardColor.NONE;
     private int number = 1;
     private bool isVisible = false;
 
     private bool isTrump = false;
     private bool isPlayable = false;
-
+    private bool shouldBeVisible = false;
     private int id = 0;
-
-    public void Remove()
-    {
-        DragDrop dd = GetComponent<DragDrop>();
-        if (transform.parent == dd.DropZone.transform)
-        {
-            dd.DropZone.GetComponent<DropZone>().RemoveFromDropZone(gameObject);
-        }
-        deck.RemoveFromDeck(gameObject);
-        Destroy(gameObject);
-    }
 
     public string GetCardName()
     {
-        string name = "Error ";
+        if (!isVisible) {
+            return "Hidden";
+        }
+        string name;
         switch (color)
         {
             case CardColor.NONE:
@@ -72,41 +63,54 @@ public class Card : MonoBehaviour
                 name = "Black ";
                 break;
             case CardColor.ROOK:
-                name = "Rook";
+                name = "Rook ";
+                break;
+            default:
+                name = "Error ";
                 break;
         }
         return name + number;
     }
 
-    private int GetPosition(CardColor color)
+    private static int getColorIndex(CardColor color)
     {
         switch (color)
         {
-            case CardColor.GREEN: return greenPosition;
-            case CardColor.YELLOW: return yellowPosition;
-            case CardColor.RED: return redPosition;
-            case CardColor.BLACK: return blackPosition;
-            case CardColor.ROOK: return rookPosition;
+            case CardColor.GREEN: return greenStartIndex;
+            case CardColor.YELLOW: return yellowStartIndex;
+            case CardColor.RED: return redStartIndex;
+            case CardColor.BLACK: return blackStartIndex;
+            case CardColor.ROOK: return rookIndex;
             default: return 0;
         }
     }
 
+    [Server]
     public void SetCard(CardColor color, int number)
     {
         this.color = color;
         this.number = number;
-        id = GetPosition(color) + number - 1;
+        id = getColorIndex(color) + number - 1;
         loadImage();
     }
 
     public CardColor GetColor()
     {
-        return color;
+
+        if (isVisible || isServer) 
+        {
+            return color;
+        }
+        return CardColor.NONE;
     }
 
     public int GetNumber()
     {
-        return number;
+        if (isVisible || isServer) 
+        {
+            return number;
+        }
+        return 0;
     }
 
     private void loadImage()
@@ -120,7 +124,7 @@ public class Card : MonoBehaviour
         front = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
     }
 
-    public void SetVisible(bool visible)
+    private void setVisibility(bool visible)
     {
         isVisible = visible;
         Image i = gameObject.GetComponent<Image>();
@@ -136,22 +140,41 @@ public class Card : MonoBehaviour
         {
             i.sprite = back;
         }
-        SetIndicator();
+        setIndicator();
     }
 
+    [Command]
+    public void Play()
+    {
+        Debug.Log("Play Card");
+    }
+
+    [ClientRpc]
+    public void SetVisible(bool visible)
+    {
+        shouldBeVisible = visible;
+        if (hasAuthority) {
+            setVisibility(true);
+        } else {
+            setVisibility(visible);
+        }
+    }
+
+    [ClientRpc]
     public void SetTrump(CardColor trumpColor)
     {
         isTrump = color == trumpColor;
-        SetIndicator();
+        setIndicator();
     }
 
-    public void SetPlayable(CardColor trickColor)
+    [ClientRpc]
+    public void SetTrickColor(CardColor trickColor)
     {
         isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
-        SetIndicator();
+        setIndicator();
     }
 
-    private void SetIndicator()
+    private void setIndicator()
     {
         Image i = gameObject.GetComponent<Image>();
         if (isVisible)
@@ -175,20 +198,11 @@ public class Card : MonoBehaviour
         return isVisible;
     }
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        Image i = gameObject.GetComponent<Image>();
-        if (i.sprite == null)
-        {
-            SetVisible(false);
-        }
+    public override void OnStartAuthority() {
+        setVisibility(true);
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    public override void OnStopAuthority() {
+        setVisibility(shouldBeVisible);
     }
 }
