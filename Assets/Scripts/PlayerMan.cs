@@ -6,6 +6,7 @@ using UnityEngine;
 public class PlayerMan : NetworkBehaviour
 {
 
+    // Make private, using searches
     public GameObject enemyArea1;
     public GameObject enemyArea2;
     public GameObject enemyArea3;
@@ -15,25 +16,28 @@ public class PlayerMan : NetworkBehaviour
     public GameObject kittyArea;
     public GameMan gameManager;
 
+    private GameObject myArea;
+
     public int playerPosition;
 
     [Command]
-    public void PlayCard(GameObject card)
+    public void CmdPlayCard(GameObject card)
     {
-        PlayFailed(card);
+        TargetPlayFailed(connectionToClient, card);
     }
 
     // Called when the 
     [TargetRpc]
-    public void PlayFailed(GameObject card)
+    public void TargetPlayFailed(NetworkConnection target, GameObject card)
     {
         Debug.Log("Play Failed");
     }
 
     // Called when a card is moved to this player's hand
     [ClientRpc]
-    public void CardMoved(GameObject card, CardAreas area)
+    public void RpcCardMoved(GameObject card, CardAreas area)
     {
+        bool is_owner = hasAuthority; // Remeber this!
         Debug.Log("Card moved");
     }
 

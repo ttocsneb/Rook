@@ -73,8 +73,9 @@ public class GameMan : NetworkBehaviour
     }
 
     [Server]
-    public void PlayerJoined(PlayerMan player)
+    public void PlayerJoined(NetworkConnection conn)
     {
+        PlayerMan player = conn.identity.GetComponent<PlayerMan>();
         player.enemyArea1 = enemyArea1;
         player.enemyArea2 = enemyArea2;
         player.enemyArea3 = enemyArea3;
@@ -100,19 +101,19 @@ public class GameMan : NetworkBehaviour
         {
             case CardAreas.KITTY:
             case CardAreas.PLAYAREA:
-                CardMoved(card, destination);
+                RpcCardMoved(card, destination);
                 break;
             case CardAreas.PLAYER0:
-                players[0].CardMoved(card, destination);
+                players[0].RpcCardMoved(card, destination);
                 break;
             case CardAreas.PLAYER1:
-                players[1].CardMoved(card, destination);
+                players[1].RpcCardMoved(card, destination);
                 break;
             case CardAreas.PLAYER2:
-                players[2].CardMoved(card, destination);
+                players[2].RpcCardMoved(card, destination);
                 break;
             case CardAreas.PLAYER3:
-                players[3].CardMoved(card, destination);
+                players[3].RpcCardMoved(card, destination);
                 break;
         }
     }
@@ -122,7 +123,7 @@ public class GameMan : NetworkBehaviour
     // If a card moved to a player's hand, then that player should get their
     // CardMoved method called
     [ClientRpc]
-    public void CardMoved(GameObject card, CardAreas destination) 
+    public void RpcCardMoved(GameObject card, CardAreas destination) 
     {
         // TODO: add the card to the internal card list
         // TODO: move the card physically to its destination

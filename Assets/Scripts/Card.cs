@@ -150,7 +150,7 @@ public class Card : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SetVisible(bool visible)
+    public void RpcSetVisible(bool visible)
     {
         shouldBeVisible = visible;
         if (hasAuthority) {
@@ -161,14 +161,14 @@ public class Card : NetworkBehaviour
     }
 
     [ClientRpc]
-    public void SetTrump(CardColor trumpColor)
+    public void RpcSetTrump(CardColor trumpColor)
     {
         isTrump = color == trumpColor;
         setIndicator();
     }
 
     [ClientRpc]
-    public void SetTrickColor(CardColor trickColor)
+    public void RpcSetTrickColor(CardColor trickColor)
     {
         isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
         setIndicator();

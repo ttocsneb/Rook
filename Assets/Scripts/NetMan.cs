@@ -20,7 +20,6 @@ public class NetMan : NetworkManager
     public override void OnServerConnect(NetworkConnection conn)
     {
         Debug.Log("Player connected to server");
-        // TODO: Get or create the PlayerMan object for PlayerJoined
-        // gameMan.PlayerJoined(conn);
+        gameMan.PlayerJoined(conn);
     }
 }
