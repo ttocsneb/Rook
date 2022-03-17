@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1480059796672636579}
   - component: {fileID: 7247205312262025113}
-  - component: {fileID: 8602287955170522552}
+  - component: {fileID: 1603976379155813079}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -49,7 +49,7 @@ MonoBehaviour:
   visible: 0
   m_AssetId: 2c6c8f50dde29a74db45b07ddbed4e45
   hasSpawned: 0
---- !u!114 &8602287955170522552
+--- !u!114 &1603976379155813079
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -63,3 +63,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
+  enemyArea1: {fileID: 0}
+  enemyArea2: {fileID: 0}
+  enemyArea3: {fileID: 0}
+  playerArea: {fileID: 0}
+  dropArea: {fileID: 0}
+  kittyArea: {fileID: 0}
+  gameManager: {fileID: 0}
+  playerPosition: 0

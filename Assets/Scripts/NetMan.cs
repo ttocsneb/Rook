@@ -17,9 +17,9 @@ public class NetMan : NetworkManager
         Debug.Log("Server Stopped");
     }
 
-    public override void OnServerConnect(NetworkConnection conn)
+    public override void OnServerAddPlayer(NetworkConnection conn)
     {
-        Debug.Log("Player connected to server");
+        base.OnServerAddPlayer(conn);
         gameMan.PlayerJoined(conn);
     }
 }

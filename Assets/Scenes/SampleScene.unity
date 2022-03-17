@@ -460,7 +460,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 144114574}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19a1307da9c3c1b4a832893ec262f2eb, type: 3}
+  m_Script: {fileID: 11500000, guid: b2d093eccd464462690e83988b7401b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
@@ -477,12 +477,7 @@ MonoBehaviour:
   autoCreatePlayer: 1
   playerSpawnMethod: 0
   spawnPrefabs: []
-  enemyArea1: {fileID: 1729341689}
-  enemyArea2: {fileID: 1102463579}
-  enemyArea3: {fileID: 996393650}
-  playerArea: {fileID: 1083196364}
-  dropArea: {fileID: 573287480}
-  kittyArea: {fileID: 496473600}
+  gameMan: {fileID: 1030727434}
 --- !u!4 &144114578
 Transform:
   m_ObjectHideFlags: 0
@@ -991,6 +986,77 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1159062500852570115, guid: b317764e7873920449094b203466027a, type: 3}
   m_PrefabInstance: {fileID: 1330957247}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1030727433
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1030727436}
+  - component: {fileID: 1030727435}
+  - component: {fileID: 1030727434}
+  m_Layer: 0
+  m_Name: GameManger
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1030727434
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1030727433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bb71a78b92ac4f619462816b532018f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  syncMode: 0
+  syncInterval: 0.1
+  enemyArea1: {fileID: 1729341689}
+  enemyArea2: {fileID: 1102463579}
+  enemyArea3: {fileID: 996393650}
+  playerArea: {fileID: 1083196364}
+  dropArea: {fileID: 573287480}
+  kittyArea: {fileID: 496473600}
+  deckArea: {fileID: 0}
+  cardPrefab: {fileID: 7991549428748399093, guid: 3d8dac2c62b882f4c9e979762995b774, type: 3}
+--- !u!114 &1030727435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1030727433}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b91ecbcc199f4492b9a91e820070131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sceneId: 1842060237
+  serverOnly: 0
+  visible: 0
+  m_AssetId: 
+  hasSpawned: 0
+--- !u!4 &1030727436
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1030727433}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 210.54231, y: 383.68005, z: -1283.1255}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1083196364 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1776514869392457199, guid: 56b71e213867fec4f924b2df709a6a37, type: 3}

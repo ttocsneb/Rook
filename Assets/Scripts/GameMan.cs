@@ -31,14 +31,18 @@ public class GameMan : NetworkBehaviour
     
     public GameObject dropArea;
     public GameObject kittyArea;
-    public GameObject deckArea;
 
     public GameObject cardPrefab;
 
+    [SyncVar]
     private int current_turn = 0;
+    [SyncVar]
     private GameState game_state = GameState.SETUP;
 
     private List<PlayerMan> players = new List<PlayerMan>();
+    private List<PlayerMan> localPlayers = new List<PlayerMan>();
+
+    private int playerOwner = -1;
 
     [Server]
     public void BeginGame() 
@@ -75,15 +79,12 @@ public class GameMan : NetworkBehaviour
     [Server]
     public void PlayerJoined(NetworkConnection conn)
     {
+        int playerPosition = players.Count;
         PlayerMan player = conn.identity.GetComponent<PlayerMan>();
-        player.enemyArea1 = enemyArea1;
-        player.enemyArea2 = enemyArea2;
-        player.enemyArea3 = enemyArea3;
-        player.playerArea = playerArea;
-        player.dropArea = dropArea;
-        player.kittyArea = kittyArea;
-        player.gameManager = this;
-        player.playerPosition = players.Count;
+        //player.RpcPlayerPosUpdate(playerPosition);
+        player.playerPosition = playerPosition; // This should automatically sync with all clients
+
+        TargetSetPlayerOwner(conn, playerPosition);
 
         players.Add(player);
         if (players.Count == 4) {
@@ -127,6 +128,25 @@ public class GameMan : NetworkBehaviour
     {
         // TODO: add the card to the internal card list
         // TODO: move the card physically to its destination
+    }
+
+    [TargetRpc]
+    public void TargetSetPlayerOwner(NetworkConnection conn, int playerOwner) {
+        this.playerOwner = playerOwner;
+        foreach (PlayerMan player in localPlayers) {
+            player.UpdateMyArea();
+        }
+    }
+
+    [Client]
+    public void ClientRegisterPlayer(PlayerMan playerMan) {
+        localPlayers.Add(playerMan);
+    }
+
+    [Client]
+    public int GetPlayerOwner()
+    {
+        return playerOwner;
     }
 
     [Server]
