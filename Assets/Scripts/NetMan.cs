@@ -20,6 +20,6 @@ public class NetMan : NetworkManager
     public override void OnServerAddPlayer(NetworkConnection conn)
     {
         base.OnServerAddPlayer(conn);
-        gameMan.PlayerJoined(conn);
+        gameMan.SrvPlayerJoined(conn);
     }
 }

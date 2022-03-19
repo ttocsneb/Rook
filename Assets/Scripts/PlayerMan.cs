@@ -14,33 +14,36 @@ public class PlayerMan : NetworkBehaviour
 
     private GameMan gameManager;
 
-    public GameObject myArea;
-    public Quaternion rotation;
+    private GameObject myArea;
+    private Quaternion rotation;
 
-    [SyncVar(hook = nameof(OnPlayerPosUpdate))]
+    private readonly List<GameObject> cards = new List<GameObject>();
+
+    [SyncVar(hook = nameof(CltOnPlayerPosUpdate))]
     public int playerPosition = -1;
 
     public override void OnStartClient()
     {
+        Debug.Log("OnStart");
         gameManager = GameObject.Find("GameManger").GetComponent<GameMan>();
-        gameManager.ClientRegisterPlayer(this);
+        gameManager.CltRegisterPlayer(this);
         enemyArea1 = gameManager.enemyArea1;
         enemyArea2 = gameManager.enemyArea2;
         enemyArea3 = gameManager.enemyArea3;
         playerArea = gameManager.playerArea;
-        Debug.Log("OnStart");
-        UpdateMyArea();
+        CltUpdateMyArea();
+        base.OnStartClient();
     }
 
     [Command]
     public void CmdPlayCard(GameObject card)
     {
-        TargetPlayFailed(connectionToClient, card);
+        TgtPlayFailed(connectionToClient, card);
     }
 
     // Called when the 
     [TargetRpc]
-    public void TargetPlayFailed(NetworkConnection target, GameObject card)
+    public void TgtPlayFailed(NetworkConnection target, GameObject card)
     {
         Debug.Log("Play Failed");
     }
@@ -49,20 +52,19 @@ public class PlayerMan : NetworkBehaviour
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas area)
     {
-        Debug.Log("Card moved");
         card.transform.SetParent(myArea.transform, false);
         card.transform.rotation = rotation;
     }
 
     [Client]
-    public void UpdateMyArea() 
+    public void CltUpdateMyArea() 
     {
-        if (gameManager == null || playerPosition == -1 || gameManager.GetPlayerOwner() == -1) {
+        if (gameManager == null || playerPosition == -1 || gameManager.CltGetPlayerOwner() == -1) {
             Debug.Log("Player Manager not yet initialized");
             return;
         }
         Debug.Log("Updating my area");
-        int playerOwner = gameManager.GetPlayerOwner();
+        int playerOwner = gameManager.CltGetPlayerOwner();
         int relativePosition = playerPosition - playerOwner;
         if (relativePosition < 0) {
             relativePosition += 4;
@@ -93,16 +95,10 @@ public class PlayerMan : NetworkBehaviour
         }
     }
 
-    [ClientRpc]
-    public void RpcPlayerPosUpdate(int pos)
+    [Client]
+    void CltOnPlayerPosUpdate(int oldPos, int newPos)
     {
-        playerPosition = pos;
-        UpdateMyArea();
-    }
-
-    void OnPlayerPosUpdate(int oldPos, int newPos)
-    {
-        UpdateMyArea();
+        CltUpdateMyArea();
     }
 
 }

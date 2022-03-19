@@ -23,6 +23,8 @@ public class Card : NetworkBehaviour
     public int width;
     public int height;
 
+    public GameMan gameManager;
+
     public static int greenStartIndex = 0;
     public static int yellowStartIndex = 14;
     public static int redStartIndex = 28;
@@ -30,14 +32,19 @@ public class Card : NetworkBehaviour
     public static int rookIndex = 56;
 
     private Sprite front;
+    [SyncVar]
     private CardColor color = CardColor.NONE;
+    [SyncVar]
     private int number = 1;
     private bool isVisible = false;
 
     private bool isTrump = false;
     private bool isPlayable = false;
     private bool shouldBeVisible = false;
+    [SyncVar(hook = nameof(OnCardChanged))]
     private int id = 0;
+
+    private bool isLoaded = false;
 
     public string GetCardName()
     {
@@ -72,6 +79,13 @@ public class Card : NetworkBehaviour
         return name + number;
     }
 
+    public void Start()
+    {
+        if (!isVisible) {
+            setVisibility(false);
+        }
+    }
+
     private static int getColorIndex(CardColor color)
     {
         switch (color)
@@ -86,12 +100,11 @@ public class Card : NetworkBehaviour
     }
 
     [Server]
-    public void SetCard(CardColor color, int number)
+    public void SrvSetCard(CardColor color, int number)
     {
         this.color = color;
         this.number = number;
         id = getColorIndex(color) + number - 1;
-        loadImage();
     }
 
     public CardColor GetColor()
@@ -113,7 +126,8 @@ public class Card : NetworkBehaviour
         return 0;
     }
 
-    private void loadImage()
+    [Client]
+    private void cltLoadImage()
     {
         int x = id % width;
         int y = id / width;
@@ -122,6 +136,8 @@ public class Card : NetworkBehaviour
         Rect rect = new Rect(x * w, texture.height - y * h - h, w, h);
 
         front = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
+
+        isLoaded = true;
     }
 
     private void setVisibility(bool visible)
@@ -130,6 +146,9 @@ public class Card : NetworkBehaviour
         Image i = gameObject.GetComponent<Image>();
         if (visible)
         {
+            if (!isLoaded) {
+                cltLoadImage();
+            }
             if (front == null)
             {
                 Debug.Log(GetCardName() + ": The card has not been loaded yet!");
@@ -144,9 +163,10 @@ public class Card : NetworkBehaviour
     }
 
     [Command]
-    public void Play()
+    public void CmdPlay()
     {
         Debug.Log("Play Card");
+        gameManager.SrvMoveCard(gameObject, CardAreas.DROPAREA);
     }
 
     [ClientRpc]
@@ -205,4 +225,12 @@ public class Card : NetworkBehaviour
     public override void OnStopAuthority() {
         setVisibility(shouldBeVisible);
     }
+
+    void OnCardChanged(int oldId, int newId) {
+        isLoaded = false;
+        if (isVisible) {
+            setVisibility(true);
+        }
+    }
+
 }

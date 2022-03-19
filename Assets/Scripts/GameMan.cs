@@ -17,8 +17,9 @@ public enum CardAreas
     PLAYER1,
     PLAYER2,
     PLAYER3,
+    DROPAREA,
     KITTY,
-    PLAYAREA,
+    DECK,
 }
 
 public class GameMan : NetworkBehaviour
@@ -31,6 +32,7 @@ public class GameMan : NetworkBehaviour
     
     public GameObject dropArea;
     public GameObject kittyArea;
+    public GameObject deckArea;
 
     public GameObject cardPrefab;
 
@@ -39,84 +41,112 @@ public class GameMan : NetworkBehaviour
     [SyncVar]
     private GameState game_state = GameState.SETUP;
 
-    private List<PlayerMan> players = new List<PlayerMan>();
-    private List<PlayerMan> localPlayers = new List<PlayerMan>();
+    private readonly List<PlayerMan> players = new List<PlayerMan>();
+    private readonly List<PlayerMan> localPlayers = new List<PlayerMan>();
+
+    private readonly List<GameObject> deck = new List<GameObject>();
+    private readonly List<GameObject> drop = new List<GameObject>();
+    private readonly List<GameObject> kitty = new List<GameObject>();
 
     private int playerOwner = -1;
 
+    private bool hasDealt = false;
+
     [Server]
-    public void BeginGame() 
+    public void SrvBeginGame() 
     {
         game_state = GameState.SETUP;
         // Spawn the cards
-        List<GameObject> cards = spawnCards();
-        // Shuffle the cards
-        int n = cards.Count;
-        while (n > 1) {
-            n--;
-            int k = Random.Range(0, n);
-            GameObject tmp = cards[k];
-            cards[k] = cards[n];
-            cards[n] = tmp;
-        }
-        // Deal the cards
-        dealCards(cards, new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3, CardAreas.KITTY}, 5);
-        dealCards(cards, new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3}, 8);
+        srvSpawnCards();
     }
 
     [Server]
-    private void dealCards(List<GameObject> cards, CardAreas[] areas, int count)
+    private void srvDealCards(CardAreas[] areas, int count = -1)
     {
-        for (int i = 0; i < count; i++) {
+        int toDeal = count < 0 ? deck.Count / areas.Length : count;
+        Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + deck.Count + " cards");
+        for (int i = 0; i < toDeal; i++) {
             foreach (CardAreas area in areas) {
-                GameObject nextCard = cards[cards.Count - 1];
-                cards.RemoveAt(cards.Count - 1);
-                moveCard(nextCard, area);
+                GameObject nextCard = deck[deck.Count - 1];
+                deck.RemoveAt(deck.Count - 1);
+                SrvMoveCard(nextCard, area);
             }
         }
     }
 
     [Server]
-    public void PlayerJoined(NetworkConnection conn)
+    private void srvDealAllCards() {
+        CardAreas[] allDests = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3, CardAreas.KITTY};
+        CardAreas[] players = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3};
+        srvDealCards(allDests, 5);
+        srvDealCards(players, -1);
+    }
+
+    [Command(requiresAuthority = false)]
+    public void CmdDealCards()
+    {
+        if (!hasDealt) {
+            srvDealAllCards();
+            hasDealt = true;
+        }
+    }
+
+    [Server]
+    public void SrvPlayerJoined(NetworkConnection conn)
     {
         int playerPosition = players.Count;
         PlayerMan player = conn.identity.GetComponent<PlayerMan>();
-        //player.RpcPlayerPosUpdate(playerPosition);
         player.playerPosition = playerPosition; // This should automatically sync with all clients
 
-        TargetSetPlayerOwner(conn, playerPosition);
+        TgtSetPlayerOwner(conn, playerPosition);
 
         players.Add(player);
         if (players.Count == 4) {
-            BeginGame();
+            SrvBeginGame();
         }
     }
     
     [Server]
-    private void moveCard(GameObject card, CardAreas destination) 
+    public void SrvMoveCard(GameObject card, CardAreas destination) 
     {
-        // TODO: Let the card know where it belongs
+        // TODO: We will need a system to be able to remove cards from their original list to their new list
+        //       Maybe the card stores the current CardArea and we notify the server side controller that
+        //       the card has been removed from that area with a method 'SrvCardRemoved(card, origin)'?
 
-        // Let the player know where the card belongs
+        PlayerMan player;
         switch (destination)
         {
-            case CardAreas.KITTY:
-            case CardAreas.PLAYAREA:
+            case CardAreas.DROPAREA:
+                // Remove client authority and make sure the card is visible
+                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                card.GetComponent<Card>().RpcSetVisible(true);
                 RpcCardMoved(card, destination);
-                break;
+                return;
+            case CardAreas.KITTY:
+            case CardAreas.DECK:
+                // Remove client authority and make sure the card is not visible
+                card.GetComponent<Card>().RpcSetVisible(false);
+                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                RpcCardMoved(card, destination);
+                return;
             case CardAreas.PLAYER0:
-                players[0].RpcCardMoved(card, destination);
+                player = players[0];
                 break;
             case CardAreas.PLAYER1:
-                players[1].RpcCardMoved(card, destination);
+                player = players[1];
                 break;
             case CardAreas.PLAYER2:
-                players[2].RpcCardMoved(card, destination);
+                player = players[2];
                 break;
             case CardAreas.PLAYER3:
-                players[3].RpcCardMoved(card, destination);
+                player = players[3];
                 break;
+            default:
+                Debug.Log("Invalid Destination");
+                return;
         }
+        card.GetComponent<NetworkIdentity>().AssignClientAuthority(player.connectionToClient);
+        player.RpcCardMoved(card, destination);
     }
 
     // Called when a card is moved to either the kitty deck or the play area
@@ -126,54 +156,79 @@ public class GameMan : NetworkBehaviour
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas destination) 
     {
-        // TODO: add the card to the internal card list
-        // TODO: move the card physically to its destination
+        // move the card physically to its destination
+        switch (destination) {
+            case CardAreas.DROPAREA:
+                card.transform.SetParent(dropArea.transform, false);
+                break;
+            case CardAreas.DECK:
+                card.transform.SetParent(deckArea.transform, false);
+                break;
+            case CardAreas.KITTY:
+                card.transform.SetParent(kittyArea.transform, false);
+                break;
+            default:
+                Debug.Log("Expected to move card to invalid position");
+                break;
+        }
+        card.transform.rotation = Quaternion.Euler(0, 0, 0);
     }
 
     [TargetRpc]
-    public void TargetSetPlayerOwner(NetworkConnection conn, int playerOwner) {
+    public void TgtSetPlayerOwner(NetworkConnection conn, int playerOwner) {
         this.playerOwner = playerOwner;
         foreach (PlayerMan player in localPlayers) {
-            player.UpdateMyArea();
+            player.CltUpdateMyArea();
         }
     }
 
     [Client]
-    public void ClientRegisterPlayer(PlayerMan playerMan) {
+    public void CltRegisterPlayer(PlayerMan playerMan) {
         localPlayers.Add(playerMan);
     }
 
     [Client]
-    public int GetPlayerOwner()
+    public int CltGetPlayerOwner()
     {
         return playerOwner;
     }
 
     [Server]
-    private GameObject spawnCard(CardColor color, int number) {
+    private GameObject srvSpawnCard(CardColor color, int number) {
         GameObject obj = Instantiate(cardPrefab, new Vector2(0, 0), Quaternion.Euler(x: 0, y:0, z:0));
         Card c = obj.GetComponent<Card>();
-        c.SetCard(color, number);
+        c.SrvSetCard(color, number);
+        c.gameManager = this;
+        NetworkServer.Spawn(obj);
+        SrvMoveCard(obj, CardAreas.DECK);
         return obj;
     }
 
     [Server]
-    private List<GameObject> spawnHouse(CardColor color) {
+    private List<GameObject> srvSpawnHouse(CardColor color) {
         List<GameObject> cards = new List<GameObject>();
         for (int i = 1; i <= 14; i++) {
-            cards.Add(spawnCard(color, i));
+            cards.Add(srvSpawnCard(color, i));
         }
         return cards;
     }
 
     [Server]
-    private List<GameObject> spawnCards() {
-        List<GameObject> cards = new List<GameObject>();
-        cards.AddRange(spawnHouse(CardColor.GREEN));
-        cards.AddRange(spawnHouse(CardColor.YELLOW));
-        cards.AddRange(spawnHouse(CardColor.RED));
-        cards.AddRange(spawnHouse(CardColor.BLACK));
-        cards.Add(spawnCard(CardColor.ROOK, 1));
-        return cards;
+    private void srvSpawnCards() {
+        deck.AddRange(srvSpawnHouse(CardColor.GREEN));
+        deck.AddRange(srvSpawnHouse(CardColor.YELLOW));
+        deck.AddRange(srvSpawnHouse(CardColor.RED));
+        deck.AddRange(srvSpawnHouse(CardColor.BLACK));
+        deck.Add(srvSpawnCard(CardColor.ROOK, 1));
+
+        // Shuffle
+        int n = deck.Count;
+        while (n > 1) {
+            n--;
+            int k = Random.Range(0, n);
+            GameObject tmp = deck[k];
+            deck[k] = deck[n];
+            deck[n] = tmp;
+        }
     }
 }
