@@ -5,7 +5,6 @@ using UnityEngine;
 public class DragDrop : MonoBehaviour
 {
     public GameObject Canvas;
-    public GameObject DropZone;
 
     private bool isDragging;
     private GameObject startParent;
@@ -15,7 +14,7 @@ public class DragDrop : MonoBehaviour
 
     void Start()
     {
-
+        Canvas = GameObject.Find("Main Canvas");
     }
 
     private void OnCollisionEnter2D(Collision2D collision) 
@@ -32,26 +31,25 @@ public class DragDrop : MonoBehaviour
 
     public void beginDrag()
     {
-        isDragging = true;
-        startParent = transform.parent.gameObject;
-        startPosition = transform.position;
-        transform.SetParent(Canvas.transform, true);
+        if (GetComponent<Card>().hasAuthority) {
+            isDragging = true;
+            startParent = transform.parent.gameObject;
+            startPosition = transform.position;
+        }
     }
 
     public void endDrag()
     {
-        isDragging = false;
-        if (isOverDropZone)
-        {
-            DropZone dz = dropZone.GetComponent<DropZone>();
-            bool success = dz.Drop(gameObject);
-            if (success)
+        if (isDragging) {
+            isDragging = false;
+            if (isOverDropZone)
             {
-                return;
+                transform.SetParent(Canvas.transform);
+                GetComponent<Card>().CmdPlay();
             }
+            transform.position = startPosition;
+            transform.SetParent(startParent.transform, false);
         }
-        transform.position = startPosition;
-        transform.SetParent(startParent.transform, false);
     }
 
     void Update()

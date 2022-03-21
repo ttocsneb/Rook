@@ -54,5 +54,8 @@
         "Temp/":true
     },
     "omnisharp.enableRoslynAnalyzers": true,
+    "cSpell.words": [
+        "Behaviour"
+    ],
     
 }
