@@ -35,19 +35,6 @@ public class PlayerMan : NetworkBehaviour
         base.OnStartClient();
     }
 
-    [Command]
-    public void CmdPlayCard(GameObject card)
-    {
-        TgtPlayFailed(connectionToClient, card);
-    }
-
-    // Called when the 
-    [TargetRpc]
-    public void TgtPlayFailed(NetworkConnection target, GameObject card)
-    {
-        Debug.Log("Play Failed");
-    }
-
     // Called when a card is moved to this player's hand
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas area)
@@ -56,6 +43,14 @@ public class PlayerMan : NetworkBehaviour
         card.transform.rotation = rotation;
     }
 
+    /// Determine which player slot that the this player should be played in
+    ///
+    /// If the player is the same player that the client controls, then they
+    /// will be placed in the playerArea
+    ///
+    /// Otherwise, one of the enemyAreas will be used for this player. The
+    /// enemyArea chosen is determined by the distance away from the client's
+    /// player so that all players apear in a counter-clockwise fashion
     [Client]
     public void CltUpdateMyArea() 
     {

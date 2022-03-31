@@ -18,33 +18,21 @@ public enum CardColor
 public class Card : NetworkBehaviour
 {
 
-    public Texture2D texture;
-    public Sprite back;
-    public int width;
-    public int height;
-
+    [SyncVar]
     public GameMan gameManager;
-
-    public static int greenStartIndex = 0;
-    public static int yellowStartIndex = 14;
-    public static int redStartIndex = 28;
-    public static int blackStartIndex = 42;
-    public static int rookIndex = 56;
 
     private Sprite front;
     [SyncVar]
     private CardColor color = CardColor.NONE;
     [SyncVar]
     private int number = 1;
-    private bool isVisible = false;
 
     private bool isTrump = false;
-    private bool isPlayable = false;
+    private bool isPlayable = true;
     private bool shouldBeVisible = false;
-    [SyncVar(hook = nameof(OnCardChanged))]
-    private int id = 0;
+    private bool isVisible = false;
 
-    private bool isLoaded = false;
+    private CardDisplay display;
 
     public string GetCardName()
     {
@@ -79,37 +67,29 @@ public class Card : NetworkBehaviour
         return name + number;
     }
 
-    public void Start()
+    public override void OnStartClient()
     {
+        // Make sure that the card starts out hidden
+        display = GetComponent<CardDisplay>();
         if (!isVisible) {
-            setVisibility(false);
+            display.SetVisibility(false);
         }
     }
 
-    private static int getColorIndex(CardColor color)
-    {
-        switch (color)
-        {
-            case CardColor.GREEN: return greenStartIndex;
-            case CardColor.YELLOW: return yellowStartIndex;
-            case CardColor.RED: return redStartIndex;
-            case CardColor.BLACK: return blackStartIndex;
-            case CardColor.ROOK: return rookIndex;
-            default: return 0;
-        }
-    }
-
+    /// Change this card's face value
+    /// 
+    /// @param color card color
+    /// @param number card number
     [Server]
     public void SrvSetCard(CardColor color, int number)
     {
         this.color = color;
         this.number = number;
-        id = getColorIndex(color) + number - 1;
+        RpcCardChanged(color, number);
     }
 
     public CardColor GetColor()
     {
-
         if (isVisible || isServer) 
         {
             return color;
@@ -126,111 +106,84 @@ public class Card : NetworkBehaviour
         return 0;
     }
 
-    [Client]
-    private void cltLoadImage()
-    {
-        int x = id % width;
-        int y = id / width;
-        int w = texture.width / width;
-        int h = texture.height / height;
-        Rect rect = new Rect(x * w, texture.height - y * h - h, w, h);
-
-        front = Sprite.Create(texture, rect, new Vector2(0.5f, 0.5f));
-
-        isLoaded = true;
-    }
-
-    private void setVisibility(bool visible)
-    {
-        isVisible = visible;
-        Image i = gameObject.GetComponent<Image>();
-        if (visible)
-        {
-            if (!isLoaded) {
-                cltLoadImage();
-            }
-            if (front == null)
-            {
-                Debug.Log(GetCardName() + ": The card has not been loaded yet!");
-            }
-            i.sprite = front;
-        }
-        else
-        {
-            i.sprite = back;
-        }
-        setIndicator();
-    }
-
+    /// Play this card and advance to the next turn
     [Command]
     public void CmdPlay()
     {
         Debug.Log("Play Card");
         gameManager.SrvMoveCard(gameObject, CardAreas.DROPAREA);
+        gameManager.SrvNextTurn();
     }
 
+    /// Called when the visibility of this card has changed
+    ///
+    /// It will remain visible to the client that has authority over this card
+    ///
+    /// @param visible whether or not the card should be visible
     [ClientRpc]
     public void RpcSetVisible(bool visible)
     {
         shouldBeVisible = visible;
         if (hasAuthority) {
-            setVisibility(true);
+            isVisible = true;
+            display.SetVisibility(true);
         } else {
-            setVisibility(visible);
+            isVisible = visible;
+            display.SetVisibility(visible);
         }
     }
 
+    /// Change the face color of trump
+    ///
+    /// @param trumpColor the trump color
+    ///
+    /// If trumpColor is NONE, then no trump color should be set
     [ClientRpc]
     public void RpcSetTrump(CardColor trumpColor)
     {
         isTrump = color == trumpColor;
-        setIndicator();
+        display.SetTrump(isTrump);
     }
 
+    /// Change the face color of the current trick
+    ///
+    /// @param trickColor the trick color
+    ///
+    /// If trumpColor is NONE, then no trump color should be set
     [ClientRpc]
     public void RpcSetTrickColor(CardColor trickColor)
     {
         isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
-        setIndicator();
+        display.SetPlayable(isPlayable);
     }
 
-    private void setIndicator()
+    /// Called when the color or number has changed
+    ///
+    /// @param color the new color
+    /// @param number the new number
+    [ClientRpc]
+    public void RpcCardChanged(CardColor color, int number)
     {
-        Image i = gameObject.GetComponent<Image>();
-        if (isVisible)
-        {
-            if (isTrump)
-            {
-                i.color = new Color32(118, 193, 244, 255);
-                return;
-            }
-            if (!isPlayable)
-            {
-                i.color = new Color32(150, 150, 150, 255);
-                return;
-            }
-        }
-        i.color = new Color32(255, 255, 255, 255);
+        display.SetCard(color, number);
     }
 
-    public bool IsVisible()
-    {
-        return isVisible;
+    /// Check if the card is playable
+    [Client]
+    public bool CltIsPlayable() {
+        return isPlayable;
     }
 
+    [Client]
     public override void OnStartAuthority() {
-        setVisibility(true);
+        // Now that the client has ownership of this card, the card should be made visible
+        display.SetVisibility(true);
     }
 
+    [Client]
     public override void OnStopAuthority() {
-        setVisibility(shouldBeVisible);
-    }
-
-    void OnCardChanged(int oldId, int newId) {
-        isLoaded = false;
-        if (isVisible) {
-            setVisibility(true);
-        }
+        // Now that the client does not own this card, the card's visibility should be
+        // whatever the server expects it to be
+        display.SetVisibility(shouldBeVisible);
     }
 
 }

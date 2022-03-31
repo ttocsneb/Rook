@@ -2,6 +2,7 @@ using Mirror;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum GameState
 {
@@ -34,10 +35,12 @@ public class GameMan : NetworkBehaviour
     public GameObject kittyArea;
     public GameObject deckArea;
 
+    public GameObject turnIndicator;
+
     public GameObject cardPrefab;
 
-    [SyncVar]
-    private int current_turn = 0;
+    [SyncVar(hook = nameof(onPlayerTurn))]
+    private int current_turn = -1;
     [SyncVar]
     private GameState game_state = GameState.SETUP;
 
@@ -74,6 +77,10 @@ public class GameMan : NetworkBehaviour
         }
     }
 
+    /// Deal all cards in the deck
+    ///
+    /// This will first deal 5 cards to each hand including the kitty.
+    /// Then deal the rest of the cards in the deck to each player
     [Server]
     private void srvDealAllCards() {
         CardAreas[] allDests = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3, CardAreas.KITTY};
@@ -82,15 +89,30 @@ public class GameMan : NetworkBehaviour
         srvDealCards(players, -1);
     }
 
+    /// A command to allow any client to deal cards to everyone
     [Command(requiresAuthority = false)]
     public void CmdDealCards()
     {
-        if (!hasDealt) {
+        if (players.Count == 4 && !hasDealt) {
             srvDealAllCards();
             hasDealt = true;
+            current_turn = 0;
         }
     }
 
+    /// Move to the next turn
+    [Server]
+    public void SrvNextTurn()
+    {
+        current_turn += 1;
+        if (current_turn >= 4) {
+            current_turn = 0;
+        }
+    }
+
+    /// A new player has joined the game
+    ///
+    /// This should be called by NetMan
     [Server]
     public void SrvPlayerJoined(NetworkConnection conn)
     {
@@ -105,14 +127,18 @@ public class GameMan : NetworkBehaviour
             SrvBeginGame();
         }
     }
-    
+
+    /// A card needs to be moved to a new destination 
+    ///
+    /// @param card card to move
+    /// @param destination the area to move the card to
+    ///
+    /// TODO: We will need a system to be able to remove cards from their original list to their new list
+    ///       Maybe the card stores the current CardArea and we notify the server side controller that
+    ///       the card has been removed from that area with a method 'SrvCardRemoved(card, origin)'?
     [Server]
     public void SrvMoveCard(GameObject card, CardAreas destination) 
     {
-        // TODO: We will need a system to be able to remove cards from their original list to their new list
-        //       Maybe the card stores the current CardArea and we notify the server side controller that
-        //       the card has been removed from that area with a method 'SrvCardRemoved(card, origin)'?
-
         PlayerMan player;
         switch (destination)
         {
@@ -149,10 +175,10 @@ public class GameMan : NetworkBehaviour
         player.RpcCardMoved(card, destination);
     }
 
-    // Called when a card is moved to either the kitty deck or the play area
-    // 
-    // If a card moved to a player's hand, then that player should get their
-    // CardMoved method called
+    /// Called when a card is moved to either the kitty deck or the play area
+    /// 
+    /// Note: If a card moved to a player's hand, then that player should get their
+    ///       CardMoved method called instead
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas destination) 
     {
@@ -174,6 +200,9 @@ public class GameMan : NetworkBehaviour
         card.transform.rotation = Quaternion.Euler(0, 0, 0);
     }
 
+    /// Called at the beginning of the game to help match clients with player ids
+    ///
+    /// This will set playerOwner to the player id of the client.
     [TargetRpc]
     public void TgtSetPlayerOwner(NetworkConnection conn, int playerOwner) {
         this.playerOwner = playerOwner;
@@ -182,28 +211,63 @@ public class GameMan : NetworkBehaviour
         }
     }
 
+    /// Called on the client when a new player has joined the game. 
+    ///
+    /// For some reason SyncVars does not support Lists of GameObjects, so we need to implement
+    /// a manual system for the local playerlist object
     [Client]
     public void CltRegisterPlayer(PlayerMan playerMan) {
         localPlayers.Add(playerMan);
     }
 
+    /// Get the player id of the current client
     [Client]
     public int CltGetPlayerOwner()
     {
         return playerOwner;
     }
 
+    /// Check if it is the current client's turn
+    [Client]
+    public bool CltMyTurn()
+    {
+        return current_turn == playerOwner;
+    }
+
+    /// Show or hide the turn indicator
+    [Client]
+    private void cltUpdateTurnIndicator()
+    {
+        Text text = turnIndicator.GetComponent<Text>();
+        if (CltMyTurn()) {
+            text.enabled = true;
+        } else {
+            text.enabled = false;
+        }
+    }
+
+    /// Spawn a new card
+    ///
+    /// This is an internal function that spawns a singular card into the game. You should instead use SrvSpawnCards()
+    ///
+    /// @param color card color
+    /// @param number card number
     [Server]
     private GameObject srvSpawnCard(CardColor color, int number) {
         GameObject obj = Instantiate(cardPrefab, new Vector2(0, 0), Quaternion.Euler(x: 0, y:0, z:0));
         Card c = obj.GetComponent<Card>();
-        c.SrvSetCard(color, number);
         c.gameManager = this;
         NetworkServer.Spawn(obj);
+        c.SrvSetCard(color, number);
         SrvMoveCard(obj, CardAreas.DECK);
         return obj;
     }
 
+    /// Spawn an entire house of cards
+    ///
+    /// This is an internal function that spawns all cards of a house into the game. You should instead use SrvSpawnCards()
+    ///
+    /// @param color card color to spawn
     [Server]
     private List<GameObject> srvSpawnHouse(CardColor color) {
         List<GameObject> cards = new List<GameObject>();
@@ -213,6 +277,9 @@ public class GameMan : NetworkBehaviour
         return cards;
     }
 
+    /// Spawn all cards into the game
+    ///
+    /// This will spawn one of each card of the deck into the game.
     [Server]
     private void srvSpawnCards() {
         deck.AddRange(srvSpawnHouse(CardColor.GREEN));
@@ -230,5 +297,10 @@ public class GameMan : NetworkBehaviour
             deck[k] = deck[n];
             deck[n] = tmp;
         }
+    }
+
+    void onPlayerTurn(int oldValue, int newValue) 
+    {
+        cltUpdateTurnIndicator();
     }
 }
