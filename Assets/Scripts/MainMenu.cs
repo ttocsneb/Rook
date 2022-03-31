@@ -15,6 +15,11 @@ public class MainMenu : MonoBehaviour
     {
         SceneManager.LoadScene("OptionScene");
     }
+    
+    public void Tutorial()
+    {
+        SceneManager.LoadScene("TutorialScene");
+    }
 
 
 }
