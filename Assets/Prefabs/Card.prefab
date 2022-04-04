@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 7991549428748399094}
   - component: {fileID: 7991549428748399089}
   - component: {fileID: 7991549428748399088}
+  - component: {fileID: 6560850817269160135}
   - component: {fileID: 7991549428748399095}
   - component: {fileID: 7991549428748399101}
   - component: {fileID: 7991549428748399100}
@@ -81,6 +82,22 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &6560850817269160135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7991549428748399093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3c6b3795f3b542c2ad0584cbaa0f6bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  texture: {fileID: 2800000, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
+  back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
+  width: 7
+  height: 9
 --- !u!114 &7991549428748399095
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,12 +116,7 @@ MonoBehaviour:
   back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
   width: 7
   height: 9
-  deck: {fileID: 0}
-  greenStartIndex: 0
-  yellowStartIndex: 14
-  redStartIndex: 28
-  blackStartIndex: 42
-  rookIndex: 56
+  gameManager: {fileID: 0}
 --- !u!114 &7991549428748399101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -118,7 +130,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Canvas: {fileID: 0}
-  DropZone: {fileID: 0}
 --- !u!114 &7991549428748399100
 MonoBehaviour:
   m_ObjectHideFlags: 0

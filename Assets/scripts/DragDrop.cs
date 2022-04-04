@@ -17,6 +17,14 @@ public class DragDrop : MonoBehaviour
         Canvas = GameObject.Find("Main Canvas");
     }
 
+    /// Check if dropping the card over the dropZone should result in playing the card
+    private bool canPlay()
+    {
+        Card card = GetComponent<Card>();
+        Debug.Log("hasAuthority: " + card.hasAuthority + ", isPlayable" + card.CltIsPlayable() + ", myTurn: " + card.gameManager.CltMyTurn());
+        return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn();
+    }
+
     private void OnCollisionEnter2D(Collision2D collision) 
     {
         isOverDropZone = true;
@@ -31,6 +39,7 @@ public class DragDrop : MonoBehaviour
 
     public void beginDrag()
     {
+        // You can only even try to drag a card if you have authority over that card
         if (GetComponent<Card>().hasAuthority) {
             isDragging = true;
             startParent = transform.parent.gameObject;
@@ -42,7 +51,7 @@ public class DragDrop : MonoBehaviour
     {
         if (isDragging) {
             isDragging = false;
-            if (isOverDropZone)
+            if (isOverDropZone && canPlay())
             {
                 transform.SetParent(Canvas.transform);
                 GetComponent<Card>().CmdPlay();
