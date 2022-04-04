@@ -371,6 +371,16 @@ MonoBehaviour:
   Panel: {fileID: 1766092792}
   img1: {fileID: 21300000, guid: bf624defcd35d1347a6c80ff1a3c2765, type: 3}
   img2: {fileID: 21300000, guid: ddc78ba823369c7428841393e249c6c9, type: 3}
+  img3: {fileID: 21300000, guid: 0da33f5a5fb58e14abeba1c737104c58, type: 3}
+  img4: {fileID: 21300000, guid: 4c68b4fbc480c3745bdcdf5d10e7b28c, type: 3}
+  img5: {fileID: 21300000, guid: 0f6ece8d3b020fb4196b7c269a0ef312, type: 3}
+  img6: {fileID: 21300000, guid: 23c5571200e79714ea1c29e9634ad0c5, type: 3}
+  img7: {fileID: 21300000, guid: 8e0ecf48074c8354f9735de191fb154a, type: 3}
+  img8: {fileID: 21300000, guid: ad983096976d2db48bcedeccc1be2ca8, type: 3}
+  img9: {fileID: 21300000, guid: ad6bfabbe23322b41a25ec244772eb0b, type: 3}
+  img10: {fileID: 21300000, guid: 45cd964ed7c2532478bddcdadff4323b, type: 3}
+  img11: {fileID: 21300000, guid: 0fc9a27a17418094a8305ffdd74dc92a, type: 3}
+  img12: {fileID: 21300000, guid: 01e393d5f6f3cf14eab6cc607a32d077, type: 3}
 --- !u!1 &1634278551
 GameObject:
   m_ObjectHideFlags: 0
