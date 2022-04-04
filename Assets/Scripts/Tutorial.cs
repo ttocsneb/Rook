@@ -19,8 +19,24 @@ public class Tutorial : MonoBehaviour
     public Sprite img10;
     public Sprite img11;
     public Sprite img12;
-    //public Sprite img13;
-    //public Sprite img14;
+
+    public Sprite img13;
+    public Sprite img14;
+    public Sprite img15;
+    public Sprite img16;
+    public Sprite img17;
+    public Sprite img18;
+    public Sprite img19;
+    public Sprite img20;
+    public Sprite img21;
+    public Sprite img22;
+    public Sprite img23;
+    public Sprite img24;
+    public Sprite img25;
+    public Sprite img26;
+
+
+
 
     private List<Sprite> sprites;
     private int currentSprite;
@@ -38,6 +54,25 @@ public class Tutorial : MonoBehaviour
         sprites.Add(img10);
         sprites.Add(img11);
         sprites.Add(img12);
+
+        sprites.Add(img13);
+        sprites.Add(img14);
+        sprites.Add(img15);
+        sprites.Add(img16);
+        sprites.Add(img17);
+        sprites.Add(img18);
+        sprites.Add(img19);
+        sprites.Add(img20);
+        sprites.Add(img21);
+        sprites.Add(img22);
+        sprites.Add(img23);
+        sprites.Add(img24);
+        sprites.Add(img25);
+        sprites.Add(img26);
+
+
+
+
 
 
         currentSprite = 0;
