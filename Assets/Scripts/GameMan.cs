@@ -320,14 +320,14 @@ public class GameMan : NetworkBehaviour
         /*if(drop.Count() == 1){//get inx of starting player for sanity checks
             trickStarterIdx = current_turn;
         }*/
-        if(drop.Count() == 4){
-            GameObject winningCard;
+        if(drop.Count == 4){
+            Card winningCard = drop[0].GetComponent<Card>();
             int winningCardIdx = 0;
             int pointTotal = 0;
             for(int i = 0; i < 4; i++){
-                GameObject card = drop[i];
+                Card card = drop[i].GetComponent<Card>();
                 //go through each card, determining its worth and adding to a total
-                if(card.GetColor == CardColor.ROOK){
+                if(card.GetColor() == CardColor.ROOK){
                     pointTotal += 20;
                 }
                 else{
@@ -344,11 +344,7 @@ public class GameMan : NetworkBehaviour
                 
 
                 //track of the winnning card (based on trump) - track index to know who played it?
-                if(i == 0){ //assumption is that drop[0] is the first card played
-                    winningCard = card;
-                    winningCardIdx = i;
-                }
-                else{
+                if (i != 0) {
                     if(card.GetColor() == TrumpColor){
                         if(winningCard.GetColor() == CardColor.ROOK){ //rook lowest of trump
                             winningCard = card;
@@ -358,7 +354,7 @@ public class GameMan : NetworkBehaviour
                             winningCard = card;
                             winningCardIdx = i;
                         }
-                        else if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){ //highest of trump, with 1 highest
+                        else if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumber()){ //highest of trump, with 1 highest
                             winningCard = card;
                             winningCardIdx = i;
                         }
@@ -368,16 +364,17 @@ public class GameMan : NetworkBehaviour
                         winningCardIdx = i;
                     }
                     else if(card.GetColor() == winningCard.GetColor()){//if card is the "local trump", but not rook/trump
-                        if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){ //highest number, with 1 highest
+                        if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumber()){ //highest number, with 1 highest
                             winningCard = card;
                             winningCardIdx = i;
                         }
                     }
+                }
             }//end for
 
             //move all cards to deck, then clear drop when done
             for(int i = 0; i < 4; i++){
-                SrvMoveCard(drop[i], CardAreas.DECK)
+                SrvMoveCard(drop[i], CardAreas.DECK);
             }
             drop.Clear();
 
