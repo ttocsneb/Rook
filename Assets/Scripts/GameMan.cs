@@ -153,6 +153,7 @@ public class GameMan : NetworkBehaviour
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
                 card.GetComponent<Card>().RpcSetVisible(true);
                 RpcCardMoved(card, destination);
+                srvCheckTrick();
                 return;
             case CardAreas.KITTY:
             case CardAreas.DECK:
@@ -348,20 +349,16 @@ public class GameMan : NetworkBehaviour
                     winningCardIdx = i;
                 }
                 else{
-                    //If c is trump take highest (rook = 0)
-                    //else, take rook
-                    //else, take highest of current color
-
                     if(card.GetColor() == TrumpColor){
-                        if(winningCard.GetColor() == CardColor.ROOK){//rook lowest of trump
+                        if(winningCard.GetColor() == CardColor.ROOK){ //rook lowest of trump
                             winningCard = card;
                             winningCardIdx = i;
                         }
-                        else if(winningCard.GetColor() != TrumpColor){//trump > non-trump
+                        else if(winningCard.GetColor() != TrumpColor){ //trump > non-trump
                             winningCard = card;
                             winningCardIdx = i;
                         }
-                        else if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){//highest of trump, with 1 highest
+                        else if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){ //highest of trump, with 1 highest
                             winningCard = card;
                             winningCardIdx = i;
                         }
@@ -371,25 +368,24 @@ public class GameMan : NetworkBehaviour
                         winningCardIdx = i;
                     }
                     else if(card.GetColor() == winningCard.GetColor()){//if card is the "local trump", but not rook/trump
-                        if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){//highest number, with 1 highest
+                        if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){ //highest number, with 1 highest
                             winningCard = card;
                             winningCardIdx = i;
                         }
                     }
             }//end for
 
-            //remove cards (all children transforms) from drop zone
-            //loop through all and remove parent, then clear 
-
-
-            //clear drop when done
+            //move all cards to deck, then clear drop when done
+            for(int i = 0; i < 4; i++){
+                SrvMoveCard(drop[i], CardAreas.DECK)
+            }
             drop.Clear();
 
             //debug message the score to add and who won
             int winner = (trickStarterIdx + winningCardIdx) % 4;
             Debug.Log("Player " + winner + " receives " + pointTotal + " points.");
 
-            trickStarterIdx = winner;//set to winner idx
+            trickStarterIdx = winner; //set to winner idx
         }
     }
 
