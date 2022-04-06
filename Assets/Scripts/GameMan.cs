@@ -53,6 +53,12 @@ public class GameMan : NetworkBehaviour
 
     private int playerOwner = -1;
 
+    //Trick taking added vars
+    [SyncVar]
+    private int trickStarterIdx = 0;
+    [SyncVar]
+    CardColor TrumpColor = CardColor.ROOK; //Need to actually get the trump color somehow
+
     private bool hasDealt = false;
 
     [Server]
@@ -96,7 +102,7 @@ public class GameMan : NetworkBehaviour
         if (players.Count == 4 && !hasDealt) {
             srvDealAllCards();
             hasDealt = true;
-            current_turn = 0;
+            current_turn = trickStarterIdx;//set trickStarterIdx to winner of bid
         }
     }
 
@@ -303,4 +309,91 @@ public class GameMan : NetworkBehaviour
     {
         cltUpdateTurnIndicator();
     }
+
+
+
+
+
+    [Server]
+    private void srvCheckTrick() {
+        /*if(drop.Count() == 1){//get inx of starting player for sanity checks
+            trickStarterIdx = current_turn;
+        }*/
+        if(drop.Count() == 4){
+            GameObject winningCard;
+            int winningCardIdx = 0;
+            int pointTotal = 0;
+            for(int i = 0; i < 4; i++){
+                GameObject card = drop[i];
+                //go through each card, determining its worth and adding to a total
+                if(card.GetColor == CardColor.ROOK){
+                    pointTotal += 20;
+                }
+                else{
+                    if(card.GetNumber() == 1){
+                        pointTotal += 15;
+                    }
+                    if(card.GetNumber() == 14 || card.GetNumber() == 10){
+                        pointTotal += 10;
+                    }
+                    if(card.GetNumber() == 5){
+                        pointTotal += 5;
+                    }
+                }
+                
+
+                //track of the winnning card (based on trump) - track index to know who played it?
+                if(i == 0){ //assumption is that drop[0] is the first card played
+                    winningCard = card;
+                    winningCardIdx = i;
+                }
+                else{
+                    //If c is trump take highest (rook = 0)
+                    //else, take rook
+                    //else, take highest of current color
+
+                    if(card.GetColor() == TrumpColor){
+                        if(winningCard.GetColor() == CardColor.ROOK){//rook lowest of trump
+                            winningCard = card;
+                            winningCardIdx = i;
+                        }
+                        else if(winningCard.GetColor() != TrumpColor){//trump > non-trump
+                            winningCard = card;
+                            winningCardIdx = i;
+                        }
+                        else if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){//highest of trump, with 1 highest
+                            winningCard = card;
+                            winningCardIdx = i;
+                        }
+                    }
+                    else if(card.GetColor() == CardColor.ROOK){ //rook is lowest of trump
+                        winningCard = card;
+                        winningCardIdx = i;
+                    }
+                    else if(card.GetColor() == winningCard.GetColor()){//if card is the "local trump", but not rook/trump
+                        if(winningCard.GetNumber() == 1 || winningCard.GetNumber() > card.GetNumer()){//highest number, with 1 highest
+                            winningCard = card;
+                            winningCardIdx = i;
+                        }
+                    }
+            }//end for
+
+            //remove cards (all children transforms) from drop zone
+            //loop through all and remove parent, then clear 
+
+
+            //clear drop when done
+            drop.Clear();
+
+            //debug message the score to add and who won
+            int winner = (trickStarterIdx + winningCardIdx) % 4;
+            Debug.Log("Player " + winner + " receives " + pointTotal + " points.");
+
+            trickStarterIdx = winner;//set to winner idx
+        }
+    }
+
+    //dropArea.transform.childCount
+    //Transform child = dropArea.transform.GetChild(i)
+    //or just use the "drop" list. Gotta engineer a way to get them in. Look at lines 160+, add a server command that finds the card in all of the lists, and then moves it to a different list?
 }
