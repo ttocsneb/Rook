@@ -35,12 +35,35 @@ public class PlayerMan : NetworkBehaviour
         base.OnStartClient();
     }
 
+    [Server]
+    public void SrvCardMoved(GameObject card, CardAreas area)
+    {
+        gameObject.GetComponent<NetworkIdentity>().AssignClientAuthority(connectionToClient);
+        cards.Add(card);
+        card.GetComponent<Card>().SrvSetArea(area);
+        RpcCardMoved(card, area);
+    }
+
     // Called when a card is moved to this player's hand
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas area)
     {
+        cards.Add(card);
         card.transform.SetParent(myArea.transform, false);
         card.transform.rotation = rotation;
+    }
+
+    [Server]
+    public void SrvCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
+        RpcCardRemoved(card);
+    }
+
+    [ClientRpc]
+    public void RpcCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
     }
 
     /// Determine which player slot that the this player should be played in

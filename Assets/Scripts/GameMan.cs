@@ -145,20 +145,30 @@ public class GameMan : NetworkBehaviour
     [Server]
     public void SrvMoveCard(GameObject card, CardAreas destination) 
     {
+        srvMoveCardFrom(card);
+
+        Card c = card.GetComponent<Card>();
         PlayerMan player;
         switch (destination)
         {
             case CardAreas.DROPAREA:
                 // Remove client authority and make sure the card is visible
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
-                card.GetComponent<Card>().RpcSetVisible(true);
+                c.SrvSetArea(CardAreas.DROPAREA);
+                c.RpcSetVisible(true);
                 RpcCardMoved(card, destination);
                 srvCheckTrick();
                 return;
             case CardAreas.KITTY:
+                c.SrvSetArea(CardAreas.KITTY);
+                c.RpcSetVisible(false);
+                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                RpcCardMoved(card, destination);
+                return;
             case CardAreas.DECK:
                 // Remove client authority and make sure the card is not visible
-                card.GetComponent<Card>().RpcSetVisible(false);
+                c.SrvSetArea(CardAreas.DECK);
+                c.RpcSetVisible(false);
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
                 RpcCardMoved(card, destination);
                 return;
@@ -178,8 +188,49 @@ public class GameMan : NetworkBehaviour
                 Debug.Log("Invalid Destination");
                 return;
         }
-        card.GetComponent<NetworkIdentity>().AssignClientAuthority(player.connectionToClient);
-        player.RpcCardMoved(card, destination);
+        // card.GetComponent<NetworkIdentity>().AssignClientAuthority(player.connectionToClient);
+        player.SrvCardMoved(card, destination);
+    }
+
+    [Server]
+    private void srvMoveCardFrom(GameObject card)
+    {
+        Card c = card.GetComponent<Card>();
+        CardAreas oldArea = c.getArea();
+
+        PlayerMan player = null;
+        switch (oldArea)
+        {
+            case CardAreas.DECK:
+                deck.Remove(card);
+                RpcCardRemoved(card, CardAreas.DECK);
+                return;
+            case CardAreas.DROPAREA:
+                drop.Remove(card);
+                RpcCardRemoved(card, CardAreas.DROPAREA);
+                return;
+            case CardAreas.KITTY:
+                kitty.Remove(card);
+                RpcCardRemoved(card, CardAreas.KITTY);
+                return;
+            case CardAreas.PLAYER0:
+                player = players[0];
+                break;
+            case CardAreas.PLAYER1:
+                player = players[1];
+                break;
+            case CardAreas.PLAYER2:
+                player = players[2];
+                break;
+            case CardAreas.PLAYER3:
+                player = players[3];
+                break;
+        }
+        // remove card from player inventory
+        if (player != null) {
+            player.SrvCardRemoved(card);
+        }
+
     }
 
     /// Called when a card is moved to either the kitty deck or the play area
@@ -192,12 +243,15 @@ public class GameMan : NetworkBehaviour
         // move the card physically to its destination
         switch (destination) {
             case CardAreas.DROPAREA:
+                drop.Add(card);
                 card.transform.SetParent(dropArea.transform, false);
                 break;
             case CardAreas.DECK:
+                deck.Add(card);
                 card.transform.SetParent(deckArea.transform, false);
                 break;
             case CardAreas.KITTY:
+                kitty.Add(card);
                 card.transform.SetParent(kittyArea.transform, false);
                 break;
             default:
@@ -205,6 +259,25 @@ public class GameMan : NetworkBehaviour
                 break;
         }
         card.transform.rotation = Quaternion.Euler(0, 0, 0);
+    }
+
+    [ClientRpc]
+    public void RpcCardRemoved(GameObject card, CardAreas destination)
+    {
+        switch (destination) {
+            case CardAreas.DROPAREA:
+                drop.Remove(card);
+                break;
+            case CardAreas.DECK:
+                deck.Remove(card);
+                break;
+            case CardAreas.KITTY:
+                kitty.Remove(card);
+                break;
+            default:
+                Debug.Log("Expected to move card to invalid position");
+                break;
+        }
     }
 
     /// Called at the beginning of the game to help match clients with player ids
