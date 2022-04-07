@@ -6,17 +6,17 @@ using TMPro;
 
 public class TrumpSelect : MonoBehaviour
 {
-    public GameObject greenSelectBtn;
-    public GameObject redSelectBtn;
-    public GameObject blackSelectBtn;
-    public GameObject yellowSelectBtn;
-    public GameObject readyBtn;
+    public Button greenSelectBtn;
+    public Button redSelectBtn;
+    public Button blackSelectBtn;
+    public Button yellowSelectBtn;
+    public Button readyBtn;
 
 
     public delegate void TrumpUpdated(CardColor cardColor, bool isReady);
     private List<TrumpUpdated> callbacks = new List<TrumpUpdated>();
 
-    public GameObject infoTxt;
+    public TextMeshProUGUI infoTxt;
 
     private CardColor color = CardColor.NONE;
     private int toDiscard = 5;
@@ -29,19 +29,19 @@ public class TrumpSelect : MonoBehaviour
 
     private void resetButtons()
     {
-        greenSelectBtn.GetComponent<Button>().interactable = true;
-        redSelectBtn.GetComponent<Button>().interactable = true;
-        blackSelectBtn.GetComponent<Button>().interactable = true;
-        yellowSelectBtn.GetComponent<Button>().interactable = true;
+        greenSelectBtn.interactable = true;
+        redSelectBtn.interactable = true;
+        blackSelectBtn.interactable = true;
+        yellowSelectBtn.interactable = true;
     }
 
-    private void disableButton(GameObject btn)
+    private void disableButton(Button btn)
     {
         resetButtons();
-        btn.GetComponent<Button>().interactable = false;
+        btn.interactable = false;
         updateHelp();
         if (toDiscard == 0) {
-            readyBtn.GetComponent<Button>().interactable = true;
+            readyBtn.interactable = true;
         }
         call(false);
     }
@@ -62,7 +62,7 @@ public class TrumpSelect : MonoBehaviour
     {
         toDiscard = cardsLeft < 0 ? 0 : cardsLeft;
         if (toDiscard == 0 && color != CardColor.NONE) {
-            readyBtn.GetComponent<Button>().interactable = true;
+            readyBtn.interactable = true;
         }
         updateHelp();
     }
@@ -99,7 +99,7 @@ public class TrumpSelect : MonoBehaviour
             text += " and discard " + toDiscard + " more cards";
         }
 
-        infoTxt.GetComponent<TextMeshProUGUI>().text = text;
+        infoTxt.text = text;
     }
 
     public void OnTrumpUpdated(CardColor trump, bool isReady)

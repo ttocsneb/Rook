@@ -1,21 +1,24 @@
 using Mirror;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class PlayerMan : NetworkBehaviour
 {
 
-    // Make private, using searches
-    public GameObject enemyArea1;
-    public GameObject enemyArea2;
-    public GameObject enemyArea3;
-    public GameObject playerArea;
-
+    public BidSelect bidSelect = null;
+    public TrumpSelect trumpSelect = null;
     private GameMan gameManager;
 
     private GameObject myArea;
+    private TextMeshProUGUI myBid;
     private Quaternion rotation;
+
+    [SyncVar(hook = nameof(OnBidChanged))]
+    private int bid = 0;
+
+    [SyncVar(hook = nameof(OnPassChanged))]
+    private bool hasPassed = false;
 
     private readonly List<GameObject> cards = new List<GameObject>();
 
@@ -24,13 +27,16 @@ public class PlayerMan : NetworkBehaviour
 
     public override void OnStartClient()
     {
-        Debug.Log("OnStart");
         gameManager = GameObject.Find("GameManger").GetComponent<GameMan>();
         gameManager.CltRegisterPlayer(this);
-        enemyArea1 = gameManager.enemyArea1;
-        enemyArea2 = gameManager.enemyArea2;
-        enemyArea3 = gameManager.enemyArea3;
-        playerArea = gameManager.playerArea;
+        if (hasAuthority) {
+            bidSelect = gameManager.bidSelect;
+            trumpSelect = gameManager.trumpSelect;
+
+            // Register the bid callbacks
+            bidSelect.AddBidCallback(OnBidMade);
+            bidSelect.AddPassCallback(OnBidPass);
+        }
         CltUpdateMyArea();
         base.OnStartClient();
     }
@@ -69,19 +75,23 @@ public class PlayerMan : NetworkBehaviour
         switch (relativePosition)
         {
             case 0:
-                myArea = playerArea;
+                myArea = gameManager.playerArea;
+                myBid = gameManager.player_bid;
                 rotation = Quaternion.Euler(0, 0, 0);
                 break;
             case 1:
-                myArea = enemyArea1;
+                myArea = gameManager.enemyArea1;
+                myBid = gameManager.enemy0_bid;
                 rotation = Quaternion.Euler(0, 0, 90);
                 break;
             case 2:
-                myArea = enemyArea2;
+                myArea = gameManager.enemyArea2;
+                myBid = gameManager.enemy1_bid;
                 rotation = Quaternion.Euler(0, 0, 180);
                 break;
             case 3:
-                myArea = enemyArea3;
+                myArea = gameManager.enemyArea3;
+                myBid = gameManager.enemy2_bid;
                 rotation = Quaternion.Euler(0, 0, 270);
                 break;
             default:
@@ -91,9 +101,108 @@ public class PlayerMan : NetworkBehaviour
     }
 
     [Client]
+    public void OnBidMade(int bid)
+    {
+        bidSelect.CanBid(false);
+        MakeBid(bid);
+    }
+
+    [Client]
+    public void OnBidPass()
+    {
+        bidSelect.CanBid(false);
+        PassBid();
+    }
+
+    [Command]
+    public void MakeBid(int bid)
+    {
+        this.bid = bid;
+        gameManager.SrvNextTurn();
+    }
+
+    [Command]
+    public void PassBid()
+    {
+        hasPassed = true;
+        gameManager.SrvNextTurn();
+    }
+
+    [ClientRpc]
+    public void RpcStartBidding()
+    {
+        myBid.text = "...";
+        if (hasAuthority) {
+            if (bidSelect == null) {
+                Debug.LogWarning("bidSelect is null even though I have authority");
+                return;
+            }
+            bidSelect.gameObject.SetActive(true);
+            bidSelect.CanBid(gameManager.CltMyTurn());
+            myBid.gameObject.SetActive(false);
+        } else {
+            myBid.gameObject.SetActive(true);
+        }
+    }
+
+    [Server]
+    public void SrvStartBidding()
+    {
+        bid = 70;
+        hasPassed = false;
+        RpcStartBidding();
+    }
+
+    [Client]
     void CltOnPlayerPosUpdate(int oldPos, int newPos)
     {
         CltUpdateMyArea();
+    }
+
+    [Client]
+    private void updateBid()
+    {
+        if (myBid == null) {
+            Debug.Log("My bid is still null...");
+            return;
+        }
+        string text = "" + bid;
+        if (hasPassed) {
+            text += " (passed)";
+        }
+        myBid.text = text;
+    }
+
+    [Server]
+    public void SrvOnMyTurn()
+    {
+        RpcOnMyTurn();
+    }
+
+    [ClientRpc]
+    void RpcOnMyTurn()
+    {
+        if (hasAuthority) {
+            if (gameManager.GetGameState() == GameState.BID) {
+                bidSelect.CanBid(true);
+            }
+        }
+    }
+
+    [Client]
+    void OnBidChanged(int oldBid, int newBid)
+    {
+        updateBid();
+    }
+
+    [Client]
+    void OnPassChanged(bool oldBid, bool newBid)
+    {
+        updateBid();
+        if (newBid && hasAuthority) {
+            bidSelect.gameObject.SetActive(false);
+            myBid.gameObject.SetActive(true);
+        }
     }
 
 }

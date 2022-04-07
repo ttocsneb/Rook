@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public enum GameState
 {
@@ -39,9 +40,17 @@ public class GameMan : NetworkBehaviour
 
     public GameObject cardPrefab;
 
+    public TrumpSelect trumpSelect;
+    public BidSelect bidSelect;
+    public TextMeshProUGUI player_bid;
+    public TextMeshProUGUI enemy0_bid;
+    public TextMeshProUGUI enemy1_bid;
+    public TextMeshProUGUI enemy2_bid;
+
+
     [SyncVar(hook = nameof(onPlayerTurn))]
     private int current_turn = -1;
-    [SyncVar]
+    [SyncVar(hook = nameof(onGameStateChanged))]
     private GameState game_state = GameState.SETUP;
 
     private readonly List<PlayerMan> players = new List<PlayerMan>();
@@ -59,8 +68,10 @@ public class GameMan : NetworkBehaviour
     public void SrvBeginGame() 
     {
         game_state = GameState.SETUP;
-        // Spawn the cards
         srvSpawnCards();
+        srvDealAllCards();
+        game_state = GameState.BID;
+        current_turn = 0;
     }
 
     [Server]
@@ -299,8 +310,35 @@ public class GameMan : NetworkBehaviour
         }
     }
 
+    public GameState GetGameState()
+    {
+        return game_state;
+    }
+
     void onPlayerTurn(int oldValue, int newValue) 
     {
         cltUpdateTurnIndicator();
+        players[newValue].SrvOnMyTurn();
+    }
+
+    void onGameStateChanged(GameState oldValue, GameState newValue)
+    {
+        switch (newValue) {
+            case GameState.SETUP:
+                Debug.Log("Setup Mode");
+                break;
+            case GameState.BID:
+                Debug.Log("Bid Mode");
+                foreach (PlayerMan player in players) {
+                    player.SrvStartBidding();
+                }
+                break;
+            case GameState.TRUMP_SELECT:
+                Debug.Log("Trump Select Mode");
+                break;
+            case GameState.PLAY:
+                Debug.Log("Play Mode");
+                break;
+        }
     }
 }
