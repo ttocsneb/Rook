@@ -39,6 +39,8 @@ public class GameMan : NetworkBehaviour
 
     public GameObject cardPrefab;
 
+    public GameObject scoreArea;
+
     [SyncVar(hook = nameof(onPlayerTurn))]
     private int current_turn = -1;
     [SyncVar]
@@ -61,6 +63,14 @@ public class GameMan : NetworkBehaviour
         game_state = GameState.SETUP;
         // Spawn the cards
         srvSpawnCards();
+    }
+
+    [Server]
+    public void SrvUpdateScores(){
+        // testing:
+        GameObject team1Score = scoreArea.transform.GetChild(0).gameObject;
+        String text = team1Score.GetComponent<UnityEngine.UI.Text>().text;
+        Debug.Log("Score: " + text);
     }
 
     [Server]
