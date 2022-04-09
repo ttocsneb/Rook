@@ -54,7 +54,6 @@ public class Tutorial : MonoBehaviour
         sprites.Add(img10);
         sprites.Add(img11);
         sprites.Add(img12);
-
         sprites.Add(img13);
         sprites.Add(img14);
         sprites.Add(img15);
@@ -69,11 +68,6 @@ public class Tutorial : MonoBehaviour
         sprites.Add(img24);
         sprites.Add(img25);
         sprites.Add(img26);
-
-
-
-
-
 
         currentSprite = 0;
     }
