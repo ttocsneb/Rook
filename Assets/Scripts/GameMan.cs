@@ -361,6 +361,7 @@ public class GameMan : NetworkBehaviour
         }
     }
 
+    [ClientRpc]
     public void RpcUpdateClientHand(GameObject card)
     {
         trickColor = card.GetComponent<Card>().GetColor();
@@ -370,7 +371,8 @@ public class GameMan : NetworkBehaviour
         for (int i = 0; i < playerArea.transform.childCount; i++)
         {
             Card handCard = playerArea.transform.GetChild(i).gameObject.GetComponent(typeof(Card)) as Card;
-            if (handCard.GetColorAlways() == trickColor)
+            CardColor handColor = handCard.GetColorAlways();
+            if (handColor == trickColor || handColor == trumpColor || handColor == CardColor.ROOK)
             {
                 hasLeadColor = true;
                 continue;

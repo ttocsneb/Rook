@@ -189,7 +189,7 @@ public class Card : NetworkBehaviour
     [Client]
     public void CltSetTrickColor(CardColor trickColor)
     {
-        isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
+        isPlayable = color == CardColor.ROOK || color == trickColor;
         display.SetPlayable(isPlayable);
     }
 
@@ -206,7 +206,7 @@ public class Card : NetworkBehaviour
     /// Check if the card is playable
     [Client]
     public bool CltIsPlayable() {
-        return isPlayable;
+        return isPlayable || isTrump;
     }
 
     [Client]
