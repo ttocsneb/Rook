@@ -110,6 +110,12 @@ public class Card : NetworkBehaviour
         return CardColor.NONE;
     }
 
+    //I had to add this for the hand highlighting because the other one was only returning NONE
+    public CardColor GetColorAlways()
+    {
+        return color;
+    }
+
     public int GetNumber()
     {
         if (isVisible || isServer) 
@@ -146,6 +152,13 @@ public class Card : NetworkBehaviour
         }
     }
 
+
+    public void SetPlayable(bool playable)
+    {
+        isPlayable = playable;
+        display.SetPlayable(isPlayable);
+    }
+
     /// Change the face color of trump
     ///
     /// @param trumpColor the trump color
@@ -163,8 +176,7 @@ public class Card : NetworkBehaviour
     /// @param trickColor the trick color
     ///
     /// If trumpColor is NONE, then no trump color should be set
-    [ClientRpc]
-    public void RpcSetTrickColor(CardColor trickColor)
+    public void SetTrickColor(CardColor trickColor)
     {
         isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
         display.SetPlayable(isPlayable);

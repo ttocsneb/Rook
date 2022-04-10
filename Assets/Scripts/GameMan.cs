@@ -60,6 +60,8 @@ public class GameMan : NetworkBehaviour
     private int playerOwner = -1;
 
     private bool hasDealt = false;
+    private CardColor trickColor;
+
 
     [SyncVar(hook = nameof(CltOnMaxBid))]
     private int maxBid = 0;
@@ -188,6 +190,11 @@ public class GameMan : NetworkBehaviour
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
                 c.SrvSetArea(CardAreas.DROPAREA);
                 c.RpcSetVisible(true);
+                //if this is the first card played, its color is the trick color
+                if (dropArea.transform.childCount == 0) 
+                {
+                    RpcUpdateClientHand(card);
+                }
                 RpcCardMoved(card, destination);
                 return;
             case CardAreas.KITTY:
@@ -305,6 +312,41 @@ public class GameMan : NetworkBehaviour
             default:
                 Debug.Log("Expected to move card to invalid position");
                 break;
+        }
+    }
+
+    public void RpcUpdateClientHand(GameObject card)
+    {
+        trickColor = card.GetComponent<Card>().GetColor();
+        Debug.Log("trick color set to " + trickColor);
+        bool hasLeadColor = false;
+        // playerArea.GetComponent<Image>().color = new Color32(255,255,225,100);
+        for (int i = 0; i < playerArea.transform.childCount; i++)
+        {
+            Card handCard = playerArea.transform.GetChild(i).gameObject.GetComponent(typeof(Card)) as Card;
+            if (handCard.GetColorAlways() == trickColor)
+            {
+                hasLeadColor = true;
+                continue;
+            }
+        }
+        if (hasLeadColor)
+        {
+            Debug.Log("has trick color");
+            for (int i = 0; i < playerArea.transform.childCount; i++)
+            {
+                Card handCard = playerArea.transform.GetChild(i).gameObject.GetComponent(typeof(Card)) as Card;
+                handCard.SetTrickColor(trickColor);
+            }
+
+        } else
+        {
+            Debug.Log("all cards playable");
+            for (int i = 0; i < playerArea.transform.childCount; i++)
+            {
+                Card handCard = playerArea.transform.GetChild(i).gameObject.GetComponent(typeof(Card)) as Card;
+                handCard.SetPlayable(true);
+            }
         }
     }
 
