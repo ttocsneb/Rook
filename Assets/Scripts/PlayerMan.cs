@@ -5,13 +5,9 @@ using TMPro;
 
 public class PlayerMan : NetworkBehaviour
 {
-
-    public BidSelect bidSelect = null;
-    public TrumpSelect trumpSelect = null;
     private GameMan gameManager;
 
     private GameObject myArea;
-    private TextMeshProUGUI myBid;
     private Quaternion rotation;
 
     [SyncVar(hook = nameof(OnBidChanged))]
@@ -25,28 +21,45 @@ public class PlayerMan : NetworkBehaviour
     [SyncVar(hook = nameof(CltOnPlayerPosUpdate))]
     public int playerPosition = -1;
 
+    private int relativePosition = -1;
+
     public override void OnStartClient()
     {
+        Debug.Log("Finding Game Manager");
         gameManager = GameObject.Find("GameManger").GetComponent<GameMan>();
         gameManager.CltRegisterPlayer(this);
-        if (hasAuthority) {
-            bidSelect = gameManager.bidSelect;
-            trumpSelect = gameManager.trumpSelect;
-
-            // Register the bid callbacks
-            bidSelect.AddBidCallback(OnBidMade);
-            bidSelect.AddPassCallback(OnBidPass);
-        }
         CltUpdateMyArea();
         base.OnStartClient();
+    }
+
+    [Server]
+    public void SrvCardMoved(GameObject card, CardAreas area)
+    {
+        cards.Add(card);
+        card.GetComponent<Card>().SrvSetArea(area);
+        RpcCardMoved(card, area);
     }
 
     // Called when a card is moved to this player's hand
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas area)
     {
+        cards.Add(card);
         card.transform.SetParent(myArea.transform, false);
         card.transform.rotation = rotation;
+    }
+
+    [Server]
+    public void SrvCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
+        RpcCardRemoved(card);
+    }
+
+    [ClientRpc]
+    public void RpcCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
     }
 
     /// Determine which player slot that the this player should be played in
@@ -66,7 +79,7 @@ public class PlayerMan : NetworkBehaviour
         }
         Debug.Log("Updating my area");
         int playerOwner = gameManager.CltGetPlayerOwner();
-        int relativePosition = playerPosition - playerOwner;
+        relativePosition = playerPosition - playerOwner;
         if (relativePosition < 0) {
             relativePosition += 4;
         }
@@ -76,53 +89,56 @@ public class PlayerMan : NetworkBehaviour
         {
             case 0:
                 myArea = gameManager.playerArea;
-                myBid = gameManager.player_bid;
                 rotation = Quaternion.Euler(0, 0, 0);
                 break;
             case 1:
                 myArea = gameManager.enemyArea1;
-                myBid = gameManager.enemy0_bid;
                 rotation = Quaternion.Euler(0, 0, 90);
                 break;
             case 2:
                 myArea = gameManager.enemyArea2;
-                myBid = gameManager.enemy1_bid;
                 rotation = Quaternion.Euler(0, 0, 180);
                 break;
             case 3:
                 myArea = gameManager.enemyArea3;
-                myBid = gameManager.enemy2_bid;
                 rotation = Quaternion.Euler(0, 0, 270);
                 break;
             default:
                 Debug.Log("Invalid relative position " + relativePosition + "!");
                 break;
         }
+
+        foreach (GameObject card in cards) {
+            card.transform.SetParent(myArea.transform, false);
+            card.transform.rotation = rotation;
+        }
+
     }
 
     [Client]
-    public void OnBidMade(int bid)
+    public void CltOnBidMade(int bid)
     {
-        bidSelect.CanBid(false);
-        MakeBid(bid);
+        gameManager.bidSelect.CanBid(false);
+        CmdMakeBid(bid);
     }
 
     [Client]
-    public void OnBidPass()
+    public void CltOnBidPass()
     {
-        bidSelect.CanBid(false);
-        PassBid();
+        gameManager.bidSelect.CanBid(false);
+        CmdPassBid();
     }
 
     [Command]
-    public void MakeBid(int bid)
+    public void CmdMakeBid(int bid)
     {
         this.bid = bid;
+        gameManager.SrvNextBid(bid);
         gameManager.SrvNextTurn();
     }
 
     [Command]
-    public void PassBid()
+    public void CmdPassBid()
     {
         hasPassed = true;
         gameManager.SrvNextTurn();
@@ -131,25 +147,20 @@ public class PlayerMan : NetworkBehaviour
     [ClientRpc]
     public void RpcStartBidding()
     {
-        myBid.text = "...";
+        Debug.Log("Starting bidding");
         if (hasAuthority) {
-            if (bidSelect == null) {
-                Debug.LogWarning("bidSelect is null even though I have authority");
-                return;
-            }
-            bidSelect.gameObject.SetActive(true);
+            Debug.Log("Activating Bid menu");
+            BidSelect bidSelect = gameManager.bidSelect;
+
             bidSelect.CanBid(gameManager.CltMyTurn());
-            myBid.gameObject.SetActive(false);
-        } else {
-            myBid.gameObject.SetActive(true);
-        }
+            bidSelect.playerBidTxt.gameObject.SetActive(false);
+            bidSelect.SetMinimumBid(70);
+        } 
     }
 
     [Server]
     public void SrvStartBidding()
     {
-        bid = 70;
-        hasPassed = false;
         RpcStartBidding();
     }
 
@@ -162,6 +173,7 @@ public class PlayerMan : NetworkBehaviour
     [Client]
     private void updateBid()
     {
+        TextMeshProUGUI myBid = cltGetBidText();
         if (myBid == null) {
             Debug.Log("My bid is still null...");
             return;
@@ -173,9 +185,29 @@ public class PlayerMan : NetworkBehaviour
         myBid.text = text;
     }
 
+    [Client]
+    private TextMeshProUGUI cltGetBidText()
+    {
+        Debug.Log("Getting bid text");
+        if (gameManager == null) {
+            Debug.LogWarning("gameManager is null!");
+            return null;
+        }
+        BidSelect bidSelect = gameManager.bidSelect;
+        return relativePosition switch
+        {
+            0 => bidSelect.playerBidTxt,
+            1 => bidSelect.enemyBid1BidTxt,
+            2 => bidSelect.enemyBid2BidTxt,
+            3 => bidSelect.enemyBid3BidTxt,
+            _ => null,
+        };
+    }
+
     [Server]
     public void SrvOnMyTurn()
     {
+        Debug.Log("Received On My Turn Message");
         RpcOnMyTurn();
     }
 
@@ -183,8 +215,16 @@ public class PlayerMan : NetworkBehaviour
     void RpcOnMyTurn()
     {
         if (hasAuthority) {
+            Debug.Log("It's My Turn!");
             if (gameManager.GetGameState() == GameState.BID) {
-                bidSelect.CanBid(true);
+                BidSelect bidSelect = gameManager.bidSelect;
+                if (hasPassed) {
+                    CmdPassBid();
+                } else if (gameManager.MaxBid() >= 120) {
+                    CltOnBidPass();
+                } else {
+                    bidSelect.CanBid(true);
+                }
             }
         }
     }
@@ -192,17 +232,28 @@ public class PlayerMan : NetworkBehaviour
     [Client]
     void OnBidChanged(int oldBid, int newBid)
     {
+        Debug.Log("Bid Changed");
         updateBid();
     }
 
     [Client]
     void OnPassChanged(bool oldBid, bool newBid)
     {
+        Debug.Log("Pass Changed");
         updateBid();
         if (newBid && hasAuthority) {
-            bidSelect.gameObject.SetActive(false);
-            myBid.gameObject.SetActive(true);
+            gameManager.bidSelect.ShowInterface(false);
         }
+    }
+
+    public int GetBid()
+    {
+        return bid;
+    }
+
+    public bool HasPassed()
+    {
+        return hasPassed;
     }
 
 }

@@ -22,7 +22,7 @@ public class DragDrop : MonoBehaviour
     {
         Card card = GetComponent<Card>();
         Debug.Log("hasAuthority: " + card.hasAuthority + ", isPlayable" + card.CltIsPlayable() + ", myTurn: " + card.gameManager.CltMyTurn());
-        return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn();
+        return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn() && card.gameManager.GetGameState() == GameState.PLAY;
     }
 
     private void OnCollisionEnter2D(Collision2D collision) 

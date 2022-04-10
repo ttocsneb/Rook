@@ -26,6 +26,10 @@ public enum CardAreas
 
 public class GameMan : NetworkBehaviour
 {
+    public BidSelect bidSelect;
+    public GameObject trumpSelect;
+
+    public GameObject canvas;
 
     public GameObject enemyArea1;
     public GameObject enemyArea2;
@@ -40,21 +44,14 @@ public class GameMan : NetworkBehaviour
 
     public GameObject cardPrefab;
 
-    public TrumpSelect trumpSelect;
-    public BidSelect bidSelect;
-    public TextMeshProUGUI player_bid;
-    public TextMeshProUGUI enemy0_bid;
-    public TextMeshProUGUI enemy1_bid;
-    public TextMeshProUGUI enemy2_bid;
-
-
     [SyncVar(hook = nameof(onPlayerTurn))]
     private int current_turn = -1;
-    [SyncVar(hook = nameof(onGameStateChanged))]
+    [SyncVar]
     private GameState game_state = GameState.SETUP;
 
     private readonly List<PlayerMan> players = new List<PlayerMan>();
     private readonly List<PlayerMan> localPlayers = new List<PlayerMan>();
+    private PlayerMan localPlayer = null;
 
     private readonly List<GameObject> deck = new List<GameObject>();
     private readonly List<GameObject> drop = new List<GameObject>();
@@ -64,13 +61,23 @@ public class GameMan : NetworkBehaviour
 
     private bool hasDealt = false;
 
+    [SyncVar(hook = nameof(CltOnMaxBid))]
+    private int maxBid = 70;
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        bidSelect.AddBidCallback(CltOnBidMade);
+        bidSelect.AddPassCallback(CltOnBidPass);
+    }
+
     [Server]
     public void SrvBeginGame() 
     {
         game_state = GameState.SETUP;
         srvSpawnCards();
         srvDealAllCards();
-        game_state = GameState.BID;
+        SrvChangeGameState(GameState.BID);
         current_turn = 0;
     }
 
@@ -115,10 +122,34 @@ public class GameMan : NetworkBehaviour
     [Server]
     public void SrvNextTurn()
     {
-        current_turn += 1;
-        if (current_turn >= 4) {
-            current_turn = 0;
+        if (game_state == GameState.BID) {
+            int passed_count = 0;
+            int winning_player = 0;
+            int bid = 0;
+            foreach (PlayerMan player in players) {
+                if (player.GetBid() > bid) {
+                    winning_player = player.playerPosition;
+                    bid = player.GetBid();
+                }
+                if (player.HasPassed()) {
+                    passed_count += 1;
+                }
+            }
+            if (passed_count >= 3) {
+                Debug.Log("We have found a winning player!");
+                RpcStopBidding();
+                game_state = GameState.TRUMP_SELECT;
+                current_turn = winning_player;
+                return;
+            }
         }
+
+        int turn = current_turn + 1;
+        if (turn >= 4) {
+            turn = 0;
+        }
+        current_turn = turn;
+        players[current_turn].SrvOnMyTurn();
     }
 
     /// A new player has joined the game
@@ -143,26 +174,32 @@ public class GameMan : NetworkBehaviour
     ///
     /// @param card card to move
     /// @param destination the area to move the card to
-    ///
-    /// TODO: We will need a system to be able to remove cards from their original list to their new list
-    ///       Maybe the card stores the current CardArea and we notify the server side controller that
-    ///       the card has been removed from that area with a method 'SrvCardRemoved(card, origin)'?
     [Server]
     public void SrvMoveCard(GameObject card, CardAreas destination) 
     {
+        srvRemoveCard(card);
+
+        Card c = card.GetComponent<Card>();
         PlayerMan player;
         switch (destination)
         {
             case CardAreas.DROPAREA:
                 // Remove client authority and make sure the card is visible
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
-                card.GetComponent<Card>().RpcSetVisible(true);
+                c.SrvSetArea(CardAreas.DROPAREA);
+                c.RpcSetVisible(true);
                 RpcCardMoved(card, destination);
                 return;
             case CardAreas.KITTY:
+                c.SrvSetArea(CardAreas.KITTY);
+                c.RpcSetVisible(false);
+                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                RpcCardMoved(card, destination);
+                return;
             case CardAreas.DECK:
                 // Remove client authority and make sure the card is not visible
-                card.GetComponent<Card>().RpcSetVisible(false);
+                c.SrvSetArea(CardAreas.DECK);
+                c.RpcSetVisible(false);
                 card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
                 RpcCardMoved(card, destination);
                 return;
@@ -183,7 +220,48 @@ public class GameMan : NetworkBehaviour
                 return;
         }
         card.GetComponent<NetworkIdentity>().AssignClientAuthority(player.connectionToClient);
-        player.RpcCardMoved(card, destination);
+        player.SrvCardMoved(card, destination);
+    }
+
+    [Server]
+    private void srvRemoveCard(GameObject card)
+    {
+        Card c = card.GetComponent<Card>();
+        CardAreas oldArea = c.getArea();
+
+        PlayerMan player = null;
+        switch (oldArea)
+        {
+            case CardAreas.DECK:
+                deck.Remove(card);
+                RpcCardRemoved(card, CardAreas.DECK);
+                return;
+            case CardAreas.DROPAREA:
+                drop.Remove(card);
+                RpcCardRemoved(card, CardAreas.DROPAREA);
+                return;
+            case CardAreas.KITTY:
+                kitty.Remove(card);
+                RpcCardRemoved(card, CardAreas.KITTY);
+                return;
+            case CardAreas.PLAYER0:
+                player = players[0];
+                break;
+            case CardAreas.PLAYER1:
+                player = players[1];
+                break;
+            case CardAreas.PLAYER2:
+                player = players[2];
+                break;
+            case CardAreas.PLAYER3:
+                player = players[3];
+                break;
+        }
+        // remove card from player inventory
+        if (player != null) {
+            player.SrvCardRemoved(card);
+        }
+
     }
 
     /// Called when a card is moved to either the kitty deck or the play area
@@ -211,6 +289,25 @@ public class GameMan : NetworkBehaviour
         card.transform.rotation = Quaternion.Euler(0, 0, 0);
     }
 
+    [ClientRpc]
+    public void RpcCardRemoved(GameObject card, CardAreas destination)
+    {
+        switch (destination) {
+            case CardAreas.DROPAREA:
+                drop.Remove(card);
+                break;
+            case CardAreas.DECK:
+                deck.Remove(card);
+                break;
+            case CardAreas.KITTY:
+                kitty.Remove(card);
+                break;
+            default:
+                Debug.Log("Expected to move card to invalid position");
+                break;
+        }
+    }
+
     /// Called at the beginning of the game to help match clients with player ids
     ///
     /// This will set playerOwner to the player id of the client.
@@ -229,6 +326,9 @@ public class GameMan : NetworkBehaviour
     [Client]
     public void CltRegisterPlayer(PlayerMan playerMan) {
         localPlayers.Add(playerMan);
+        if (playerMan.hasAuthority) {
+            localPlayer = playerMan;
+        }
     }
 
     /// Get the player id of the current client
@@ -315,20 +415,23 @@ public class GameMan : NetworkBehaviour
         return game_state;
     }
 
+    [Client]
     void onPlayerTurn(int oldValue, int newValue) 
     {
         cltUpdateTurnIndicator();
-        players[newValue].SrvOnMyTurn();
     }
 
-    void onGameStateChanged(GameState oldValue, GameState newValue)
+    [Server]
+    void SrvChangeGameState(GameState newValue)
     {
+        game_state = newValue;
         switch (newValue) {
             case GameState.SETUP:
                 Debug.Log("Setup Mode");
                 break;
             case GameState.BID:
                 Debug.Log("Bid Mode");
+                RpcStartBidding();
                 foreach (PlayerMan player in players) {
                     player.SrvStartBidding();
                 }
@@ -340,5 +443,51 @@ public class GameMan : NetworkBehaviour
                 Debug.Log("Play Mode");
                 break;
         }
+    }
+    [ClientRpc]
+    void RpcStartBidding()
+    {
+        bidSelect.enemyBid1BidTxt.text = "...";
+        bidSelect.enemyBid2BidTxt.text = "...";
+        bidSelect.enemyBid3BidTxt.text = "...";
+        bidSelect.gameObject.SetActive(true);
+        bidSelect.ShowInterface(true);
+    }
+
+    [ClientRpc]
+    void RpcStopBidding()
+    {
+        bidSelect.gameObject.SetActive(false);
+    }
+
+    [Client]
+    public void CltOnBidMade(int bid)
+    {
+        localPlayer.CltOnBidMade(bid);
+    }
+
+    [Client]
+    public void CltOnBidPass()
+    {
+        localPlayer.CltOnBidPass();
+    }
+
+    [Server]
+    public void SrvNextBid(int bid)
+    {
+        if (bid > maxBid) {
+            maxBid = bid;
+        }
+    }
+
+    public int MaxBid()
+    {
+        return maxBid;
+    }
+
+    [Client]
+    public void CltOnMaxBid(int oldValue, int newValue)
+    {
+        bidSelect.SetMinimumBid(newValue + 5);
     }
 }

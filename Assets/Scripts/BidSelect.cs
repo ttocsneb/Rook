@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,12 +5,16 @@ using TMPro;
 
 public class BidSelect : MonoBehaviour
 {
-
+    public GameObject bidInterface;
     public Button bidBtn;
     public Button passBtn;
     public Button increaseBtn;
     public Button decreaseBtn;
     public TextMeshProUGUI bidTxt;
+    public TextMeshProUGUI playerBidTxt;
+    public TextMeshProUGUI enemyBid1BidTxt;
+    public TextMeshProUGUI enemyBid2BidTxt;
+    public TextMeshProUGUI enemyBid3BidTxt;
 
     private int maxBid = 120;
     private int minBid = 70;
@@ -100,6 +103,7 @@ public class BidSelect : MonoBehaviour
         if (bid <= minBid) {
             bid = minBid;
             decreaseBtn.interactable = false;
+            updateText();
         } else {
             decreaseBtn.interactable = true;
         }
@@ -111,8 +115,15 @@ public class BidSelect : MonoBehaviour
         if (bid >= maxBid) {
             bid = maxBid;
             increaseBtn.interactable = false;
+            updateText();
         } else {
             increaseBtn.interactable = true;
         }
+    }
+
+    public void ShowInterface(bool show)
+    {
+        bidInterface.SetActive(show);
+        playerBidTxt.gameObject.SetActive(!show);
     }
 }

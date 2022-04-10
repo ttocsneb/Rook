@@ -33,6 +33,7 @@ public class Card : NetworkBehaviour
     private bool isVisible = false;
 
     private CardDisplay display;
+    private CardAreas myArea;
 
     public string GetCardName()
     {
@@ -86,6 +87,18 @@ public class Card : NetworkBehaviour
         this.color = color;
         this.number = number;
         RpcCardChanged(color, number);
+    }
+
+    [Server]
+    public void SrvSetArea(CardAreas area)
+    {
+        myArea = area;
+    }
+
+    [Server]
+    public CardAreas getArea()
+    {
+        return myArea;
     }
 
     public CardColor GetColor()
