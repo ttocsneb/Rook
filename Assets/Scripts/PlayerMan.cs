@@ -150,9 +150,7 @@ public class PlayerMan : NetworkBehaviour
     [ClientRpc]
     public void RpcStartBidding()
     {
-        Debug.Log("Starting bidding");
         if (hasAuthority) {
-            Debug.Log("Activating Bid menu");
             BidSelect bidSelect = gameManager.bidSelect;
 
             bidSelect.CanBid(gameManager.CltMyTurn());
@@ -178,7 +176,7 @@ public class PlayerMan : NetworkBehaviour
     {
         TextMeshProUGUI myBid = cltGetBidText();
         if (myBid == null) {
-            Debug.Log("My bid is still null...");
+            Debug.LogWarning("My bid is still null...");
             return;
         }
         string text = "" + bid;
@@ -191,7 +189,6 @@ public class PlayerMan : NetworkBehaviour
     [Client]
     private TextMeshProUGUI cltGetBidText()
     {
-        Debug.Log("Getting bid text");
         if (gameManager == null) {
             Debug.LogWarning("gameManager is null!");
             return null;
@@ -210,7 +207,6 @@ public class PlayerMan : NetworkBehaviour
     [Server]
     public void SrvOnMyTurn()
     {
-        Debug.Log("Received On My Turn Message");
         RpcOnMyTurn();
     }
 
@@ -218,7 +214,6 @@ public class PlayerMan : NetworkBehaviour
     void RpcOnMyTurn()
     {
         if (hasAuthority) {
-            Debug.Log("It's My Turn!");
             if (gameManager.GetGameState() == GameState.BID) {
                 BidSelect bidSelect = gameManager.bidSelect;
                 if (hasPassed) {
@@ -233,14 +228,12 @@ public class PlayerMan : NetworkBehaviour
     [Client]
     void OnBidChanged(int oldBid, int newBid)
     {
-        Debug.Log("Bid Changed");
         updateBid();
     }
 
     [Client]
     void OnPassChanged(bool oldBid, bool newBid)
     {
-        Debug.Log("Pass Changed");
         updateBid();
         if (newBid && hasAuthority) {
             gameManager.bidSelect.ShowInterface(false);

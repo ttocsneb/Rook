@@ -35,7 +35,6 @@ public class BidSelect : MonoBehaviour
 
     public void OnPass()
     {
-        Debug.Log("Passed");
         foreach (Pass callback in passCallbacks) {
             callback();
         }
@@ -43,7 +42,6 @@ public class BidSelect : MonoBehaviour
 
     public void OnBid()
     {
-        Debug.Log("Bid " + bid);
         foreach (BidUpdated callback in bidCallbacks) {
             callback(bid);
         }

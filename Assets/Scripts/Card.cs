@@ -129,7 +129,6 @@ public class Card : NetworkBehaviour
     [Command]
     public void CmdPlay()
     {
-        Debug.Log("Play Card");
         if (gameManager.GetGameState() == GameState.TRUMP_SELECT) {
             gameManager.SrvMoveCard(gameObject, CardAreas.KITTY);
         } else {

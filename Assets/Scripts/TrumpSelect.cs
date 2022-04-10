@@ -23,7 +23,6 @@ public class TrumpSelect : MonoBehaviour
 
     public void Start() 
     {
-        AddCallback(OnTrumpUpdated);
         updateHelp();
     }
 
@@ -103,37 +102,28 @@ public class TrumpSelect : MonoBehaviour
         infoTxt.text = text;
     }
 
-    public void OnTrumpUpdated(CardColor trump, bool isReady)
-    {
-        Debug.Log("Callback Called: Is ready: " + isReady);
-    }
-
     public void OnGreenSelect() 
     {
         color = CardColor.GREEN;
         disableButton(greenSelectBtn);
-        Debug.Log("Green selected");
     }
     
     public void OnRedSelect() 
     {
         color = CardColor.RED;
         disableButton(redSelectBtn);
-        Debug.Log("Red selected");
     }
 
     public void OnBlackSelect() 
     {
         color = CardColor.BLACK;
         disableButton(blackSelectBtn);
-        Debug.Log("Black selected");
     }
 
     public void OnYellowSelect() 
     {
         color = CardColor.YELLOW;
         disableButton(yellowSelectBtn);
-        Debug.Log("Yellow selected");
     }
 
     public void OnReady()

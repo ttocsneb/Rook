@@ -90,11 +90,11 @@ public class GameMan : NetworkBehaviour
     [Server]
     private void srvDealCards(CardAreas[] areas, int count = -1)
     {
+        // We use allCards so that we can deal from any previous state 
         int numCards = allCards.Count - dealPosition;
 
         int toDeal = count < 0 ? numCards / areas.Length : count;
         int expected = numCards - (toDeal * areas.Length);
-        Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + numCards + " cards");
         for (int i = 0; i < toDeal; i++) {
             foreach (CardAreas area in areas) {
                 GameObject nextCard = allCards[dealPosition];
@@ -103,31 +103,10 @@ public class GameMan : NetworkBehaviour
             }
         }
         numCards = allCards.Count - dealPosition;
-        Debug.Log("Dealt " + (numCards - (toDeal * areas.Length)) + " cards");
         if (numCards != expected) {
             Debug.LogError("There are not the same number of expected cards! expected " + expected + " cards, but found " + deck.Count + " cards.");
         }
     }
-
-    // [Server]
-    // private void srvDealCards(List<GameObject> cards, CardAreas[] areas, int count = -1)
-    // {
-    //     int toDeal = count < 0 ? cards.Count / areas.Length : count;
-    //     int expected = cards.Count - toDeal * areas.Length;
-    //     Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + cards.Count + " cards");
-    //     for (int i = 0; i < toDeal; i++) {
-    //         foreach (CardAreas area in areas) {
-    //             GameObject nextCard = cards[0];
-    //             cards.Remove(nextCard);
-    //             SrvMoveCard(nextCard, area);
-    //         }
-    //     }
-
-    //     Debug.Log("There are now " + cards.Count + " cards left in the deck");
-    //     if (cards.Count != expected) {
-    //         Debug.LogError("There are not the same number of expected cards! expected " + expected + " cards, but found " + deck.Count + " cards.");
-    //     }
-    // }
 
     /// Deal all cards in the deck
     ///
@@ -135,14 +114,21 @@ public class GameMan : NetworkBehaviour
     /// Then deal the rest of the cards in the deck to each player
     [Server]
     private void srvDealAllCards() {
+        // Shuffle
+        int n = allCards.Count;
+        while (n > 1) {
+            n--;
+            int k = Random.Range(0, n);
+            GameObject tmp = allCards[k];
+            allCards[k] = allCards[n];
+            allCards[n] = tmp;
+        }
+
         dealPosition = 0;
         CardAreas[] allDests = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3, CardAreas.KITTY};
         CardAreas[] players = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3};
-        // List<GameObject> cards = new List<GameObject>();
-        // cards.AddRange(deck);
         srvDealCards(allDests, 5);
         srvDealCards(players);
-        Debug.LogFormat("There are {0} cards in the kitty", kitty.Count);
     }
 
     /// A command to allow any client to deal cards to everyone
@@ -161,6 +147,7 @@ public class GameMan : NetworkBehaviour
     public void SrvNextTurn()
     {
         if (game_state == GameState.BID) {
+            // Check if the winning bidder has been found
             int passed_count = 0;
             int winning_player = 0;
             int bid = 0;
@@ -174,7 +161,6 @@ public class GameMan : NetworkBehaviour
                 }
             }
             if (passed_count >= 3 || bid >= 120) {
-                Debug.Log("We have found a winning player!");
                 RpcStopBidding();
                 SrvChangeGameState(GameState.TRUMP_SELECT);
                 current_turn = winning_player;
@@ -219,12 +205,12 @@ public class GameMan : NetworkBehaviour
 
         Card c = card.GetComponent<Card>();
         NetworkIdentity ni = card.GetComponent<NetworkIdentity>();
+        // Remove authority just in case the card had authority from before
         ni.RemoveClientAuthority();
         PlayerMan player;
         switch (destination)
         {
             case CardAreas.DROPAREA:
-                // Remove client authority and make sure the card is visible
                 c.SrvSetArea(CardAreas.DROPAREA);
                 c.RpcSetVisible(true);
                 drop.Add(card);
@@ -261,7 +247,7 @@ public class GameMan : NetworkBehaviour
                 player = players[3];
                 break;
             default:
-                Debug.Log("Invalid Destination");
+                Debug.LogError("Invalid Destination");
                 return;
         }
         ni.AssignClientAuthority(player.connectionToClient);
@@ -336,7 +322,7 @@ public class GameMan : NetworkBehaviour
                 }
                 break;
             default:
-                Debug.Log("Expected to move card to invalid position");
+                Debug.LogError("Expected to move card to invalid position");
                 break;
         }
         card.transform.rotation = Quaternion.Euler(0, 0, 0);
@@ -356,7 +342,7 @@ public class GameMan : NetworkBehaviour
                 kitty.Remove(card);
                 break;
             default:
-                Debug.Log("Expected to move card to invalid position");
+                Debug.LogError("Expected to move card to invalid position");
                 break;
         }
     }
@@ -498,15 +484,6 @@ public class GameMan : NetworkBehaviour
         }
         deck.AddRange(cards);
 
-        // Shuffle
-        int n = deck.Count;
-        while (n > 1) {
-            n--;
-            int k = Random.Range(0, n);
-            GameObject tmp = deck[k];
-            deck[k] = deck[n];
-            deck[n] = tmp;
-        }
     }
 
     public GameState GetGameState()
@@ -542,7 +519,6 @@ public class GameMan : NetworkBehaviour
                 List<GameObject> fromKitty = new List<GameObject>();
                 fromKitty.AddRange(kitty);
                 foreach (GameObject card in fromKitty) {
-                    Debug.Log("Moving card to player area");
                     SrvMoveCard(card, dest);
                 }
                 // Temporarily give authority to the winning bidder while they choose the trump color
@@ -575,18 +551,22 @@ public class GameMan : NetworkBehaviour
     [Client]
     public void CltOnBidMade(int bid)
     {
+        // Called from bidSelect
         localPlayer.CltOnBidMade(bid);
     }
 
     [Client]
     public void CltOnBidPass()
     {
+        // Called from bidPass
         localPlayer.CltOnBidPass();
     }
 
     [Server]
     public void SrvNextBid(int bid)
     {
+        // Keep track of the minimum bid for each following player
+        // This is the maximum bid made so far
         if (bid > maxBid) {
             maxBid = bid;
         }
@@ -600,12 +580,14 @@ public class GameMan : NetworkBehaviour
     [Client]
     public void CltOnMaxBid(int oldValue, int newValue)
     {
+        // Make sure that the minimum bid is more than the current maximum
         bidSelect.SetMinimumBid(newValue + 5);
     }
 
     [TargetRpc]
     public void TgtOnStartTrumpSelect(NetworkConnection conn)
     {
+        // Make sure that the kitty area collider is enabled so that the player can discard their cards
         kittyArea.GetComponent<BoxCollider2D>().enabled = true;
         trumpSelect.gameObject.SetActive(true);
     }
@@ -620,7 +602,7 @@ public class GameMan : NetworkBehaviour
     [Client]
     public void CltOnTrumpUpdated(CardColor trump, bool isReady)
     {
-        // TODO: Update the trump display for this client
+        // Called from trumpSelect
         if (isReady) {
             CmdOnTrumpSelectReady(trump);
             trumpSelect.gameObject.SetActive(false);
@@ -632,6 +614,7 @@ public class GameMan : NetworkBehaviour
     [Command]
     public void CmdOnTrumpSelectReady(CardColor trump)
     {
+        // Once the trump has been selected and the player is ready, then the game state can be changed to PLAY
         SrvSetTrumpColor(trump);
         SrvChangeGameState(GameState.PLAY);
     }
