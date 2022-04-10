@@ -62,7 +62,7 @@ public class GameMan : NetworkBehaviour
     private bool hasDealt = false;
 
     [SyncVar(hook = nameof(CltOnMaxBid))]
-    private int maxBid = 70;
+    private int maxBid = 0;
 
     public override void OnStartClient()
     {
@@ -135,7 +135,7 @@ public class GameMan : NetworkBehaviour
                     passed_count += 1;
                 }
             }
-            if (passed_count >= 3) {
+            if (passed_count >= 3 || bid >= 120) {
                 Debug.Log("We have found a winning player!");
                 RpcStopBidding();
                 game_state = GameState.TRUMP_SELECT;

@@ -220,8 +220,6 @@ public class PlayerMan : NetworkBehaviour
                 BidSelect bidSelect = gameManager.bidSelect;
                 if (hasPassed) {
                     CmdPassBid();
-                } else if (gameManager.MaxBid() >= 120) {
-                    CltOnBidPass();
                 } else {
                     bidSelect.CanBid(true);
                 }
