@@ -67,9 +67,10 @@ public class TrumpSelect : MonoBehaviour
         updateHelp();
     }
 
-    public void DiscardOne()
+    public bool DiscardOne()
     {
         UpdateToDiscard(toDiscard - 1);
+        return toDiscard == 0;
     }
 
     private void updateHelp()

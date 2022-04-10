@@ -27,9 +27,7 @@ public enum CardAreas
 public class GameMan : NetworkBehaviour
 {
     public BidSelect bidSelect;
-    public GameObject trumpSelect;
-
-    public GameObject canvas;
+    public TrumpSelect trumpSelect;
 
     public GameObject enemyArea1;
     public GameObject enemyArea2;
@@ -53,6 +51,7 @@ public class GameMan : NetworkBehaviour
     private readonly List<PlayerMan> localPlayers = new List<PlayerMan>();
     private PlayerMan localPlayer = null;
 
+    private readonly List<GameObject> allCards = new List<GameObject>();
     private readonly List<GameObject> deck = new List<GameObject>();
     private readonly List<GameObject> drop = new List<GameObject>();
     private readonly List<GameObject> kitty = new List<GameObject>();
@@ -61,6 +60,8 @@ public class GameMan : NetworkBehaviour
 
     private bool hasDealt = false;
     private CardColor trickColor;
+    [SyncVar]
+    private CardColor trumpColor;
 
 
     [SyncVar(hook = nameof(CltOnMaxBid))]
@@ -71,6 +72,7 @@ public class GameMan : NetworkBehaviour
         base.OnStartClient();
         bidSelect.AddBidCallback(CltOnBidMade);
         bidSelect.AddPassCallback(CltOnBidPass);
+        trumpSelect.AddCallback(CltOnTrumpUpdated);
     }
 
     [Server]
@@ -83,19 +85,49 @@ public class GameMan : NetworkBehaviour
         current_turn = 0;
     }
 
+    private int dealPosition = 0;
+
     [Server]
     private void srvDealCards(CardAreas[] areas, int count = -1)
     {
-        int toDeal = count < 0 ? deck.Count / areas.Length : count;
-        Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + deck.Count + " cards");
+        int numCards = allCards.Count - dealPosition;
+
+        int toDeal = count < 0 ? numCards / areas.Length : count;
+        int expected = numCards - (toDeal * areas.Length);
+        Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + numCards + " cards");
         for (int i = 0; i < toDeal; i++) {
             foreach (CardAreas area in areas) {
-                GameObject nextCard = deck[deck.Count - 1];
-                deck.RemoveAt(deck.Count - 1);
+                GameObject nextCard = allCards[dealPosition];
+                dealPosition += 1;
                 SrvMoveCard(nextCard, area);
             }
         }
+        numCards = allCards.Count - dealPosition;
+        Debug.Log("Dealt " + (numCards - (toDeal * areas.Length)) + " cards");
+        if (numCards != expected) {
+            Debug.LogError("There are not the same number of expected cards! expected " + expected + " cards, but found " + deck.Count + " cards.");
+        }
     }
+
+    // [Server]
+    // private void srvDealCards(List<GameObject> cards, CardAreas[] areas, int count = -1)
+    // {
+    //     int toDeal = count < 0 ? cards.Count / areas.Length : count;
+    //     int expected = cards.Count - toDeal * areas.Length;
+    //     Debug.Log("Dealing " + toDeal * areas.Length + " cards from " + cards.Count + " cards");
+    //     for (int i = 0; i < toDeal; i++) {
+    //         foreach (CardAreas area in areas) {
+    //             GameObject nextCard = cards[0];
+    //             cards.Remove(nextCard);
+    //             SrvMoveCard(nextCard, area);
+    //         }
+    //     }
+
+    //     Debug.Log("There are now " + cards.Count + " cards left in the deck");
+    //     if (cards.Count != expected) {
+    //         Debug.LogError("There are not the same number of expected cards! expected " + expected + " cards, but found " + deck.Count + " cards.");
+    //     }
+    // }
 
     /// Deal all cards in the deck
     ///
@@ -103,10 +135,14 @@ public class GameMan : NetworkBehaviour
     /// Then deal the rest of the cards in the deck to each player
     [Server]
     private void srvDealAllCards() {
+        dealPosition = 0;
         CardAreas[] allDests = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3, CardAreas.KITTY};
         CardAreas[] players = new CardAreas[] {CardAreas.PLAYER0, CardAreas.PLAYER1, CardAreas.PLAYER2, CardAreas.PLAYER3};
+        // List<GameObject> cards = new List<GameObject>();
+        // cards.AddRange(deck);
         srvDealCards(allDests, 5);
-        srvDealCards(players, -1);
+        srvDealCards(players);
+        Debug.LogFormat("There are {0} cards in the kitty", kitty.Count);
     }
 
     /// A command to allow any client to deal cards to everyone
@@ -140,7 +176,7 @@ public class GameMan : NetworkBehaviour
             if (passed_count >= 3 || bid >= 120) {
                 Debug.Log("We have found a winning player!");
                 RpcStopBidding();
-                game_state = GameState.TRUMP_SELECT;
+                SrvChangeGameState(GameState.TRUMP_SELECT);
                 current_turn = winning_player;
                 return;
             }
@@ -182,14 +218,16 @@ public class GameMan : NetworkBehaviour
         srvRemoveCard(card);
 
         Card c = card.GetComponent<Card>();
+        NetworkIdentity ni = card.GetComponent<NetworkIdentity>();
+        ni.RemoveClientAuthority();
         PlayerMan player;
         switch (destination)
         {
             case CardAreas.DROPAREA:
                 // Remove client authority and make sure the card is visible
-                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
                 c.SrvSetArea(CardAreas.DROPAREA);
                 c.RpcSetVisible(true);
+                drop.Add(card);
                 //if this is the first card played, its color is the trick color
                 if (dropArea.transform.childCount == 0) 
                 {
@@ -200,14 +238,14 @@ public class GameMan : NetworkBehaviour
             case CardAreas.KITTY:
                 c.SrvSetArea(CardAreas.KITTY);
                 c.RpcSetVisible(false);
-                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                kitty.Add(card);
                 RpcCardMoved(card, destination);
                 return;
             case CardAreas.DECK:
                 // Remove client authority and make sure the card is not visible
                 c.SrvSetArea(CardAreas.DECK);
                 c.RpcSetVisible(false);
-                card.GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                deck.Add(card);
                 RpcCardMoved(card, destination);
                 return;
             case CardAreas.PLAYER0:
@@ -226,7 +264,7 @@ public class GameMan : NetworkBehaviour
                 Debug.Log("Invalid Destination");
                 return;
         }
-        card.GetComponent<NetworkIdentity>().AssignClientAuthority(player.connectionToClient);
+        ni.AssignClientAuthority(player.connectionToClient);
         player.SrvCardMoved(card, destination);
     }
 
@@ -282,12 +320,20 @@ public class GameMan : NetworkBehaviour
         switch (destination) {
             case CardAreas.DROPAREA:
                 card.transform.SetParent(dropArea.transform, false);
+                drop.Add(card);
                 break;
             case CardAreas.DECK:
                 card.transform.SetParent(deckArea.transform, false);
+                deck.Add(card);
                 break;
             case CardAreas.KITTY:
+                kitty.Add(card);
                 card.transform.SetParent(kittyArea.transform, false);
+                if (playerOwner == current_turn && game_state == GameState.TRUMP_SELECT) {
+                    if (trumpSelect.DiscardOne()) {
+                        kittyArea.GetComponent<BoxCollider2D>().enabled = false;
+                    }
+                }
                 break;
             default:
                 Debug.Log("Expected to move card to invalid position");
@@ -336,7 +382,7 @@ public class GameMan : NetworkBehaviour
             for (int i = 0; i < playerArea.transform.childCount; i++)
             {
                 Card handCard = playerArea.transform.GetChild(i).gameObject.GetComponent(typeof(Card)) as Card;
-                handCard.SetTrickColor(trickColor);
+                handCard.CltSetTrickColor(trickColor);
             }
 
         } else
@@ -413,6 +459,7 @@ public class GameMan : NetworkBehaviour
         NetworkServer.Spawn(obj);
         c.SrvSetCard(color, number);
         SrvMoveCard(obj, CardAreas.DECK);
+        allCards.Add(obj);
         return obj;
     }
 
@@ -435,11 +482,19 @@ public class GameMan : NetworkBehaviour
     /// This will spawn one of each card of the deck into the game.
     [Server]
     private void srvSpawnCards() {
-        deck.AddRange(srvSpawnHouse(CardColor.GREEN));
-        deck.AddRange(srvSpawnHouse(CardColor.YELLOW));
-        deck.AddRange(srvSpawnHouse(CardColor.RED));
-        deck.AddRange(srvSpawnHouse(CardColor.BLACK));
-        deck.Add(srvSpawnCard(CardColor.ROOK, 1));
+        List<GameObject> cards = new List<GameObject>();
+
+        cards.AddRange(srvSpawnHouse(CardColor.GREEN));
+        cards.AddRange(srvSpawnHouse(CardColor.YELLOW));
+        cards.AddRange(srvSpawnHouse(CardColor.RED));
+        cards.AddRange(srvSpawnHouse(CardColor.BLACK));
+        cards.Add(srvSpawnCard(CardColor.ROOK, 1));
+
+        foreach (GameObject obj in cards) {
+            Card card = obj.GetComponent<Card>();
+            card.SrvSetArea(CardAreas.DECK);
+        }
+        deck.AddRange(cards);
 
         // Shuffle
         int n = deck.Count;
@@ -480,9 +535,22 @@ public class GameMan : NetworkBehaviour
                 break;
             case GameState.TRUMP_SELECT:
                 Debug.Log("Trump Select Mode");
+                // Move cards from kitty into the bid winner's hand
+                CardAreas dest = GetPlayerArea(current_turn);
+                List<GameObject> fromKitty = new List<GameObject>();
+                fromKitty.AddRange(kitty);
+                foreach (GameObject card in fromKitty) {
+                    Debug.Log("Moving card to player area");
+                    SrvMoveCard(card, dest);
+                }
+                // Temporarily give authority to the winning bidder while they choose the trump color
+                GetComponent<NetworkIdentity>().AssignClientAuthority(players[current_turn].connectionToClient);
+                TgtOnStartTrumpSelect(players[current_turn].connectionToClient);
                 break;
             case GameState.PLAY:
                 Debug.Log("Play Mode");
+                GetComponent<NetworkIdentity>().RemoveClientAuthority();
+                RpcBeginPlay();
                 break;
         }
     }
@@ -531,5 +599,65 @@ public class GameMan : NetworkBehaviour
     public void CltOnMaxBid(int oldValue, int newValue)
     {
         bidSelect.SetMinimumBid(newValue + 5);
+    }
+
+    [TargetRpc]
+    public void TgtOnStartTrumpSelect(NetworkConnection conn)
+    {
+        kittyArea.GetComponent<BoxCollider2D>().enabled = true;
+        trumpSelect.gameObject.SetActive(true);
+    }
+
+    [TargetRpc]
+    public void TgtOnStopTrumpSelect(NetworkConnection conn)
+    {
+        kittyArea.GetComponent<BoxCollider2D>().enabled = false;
+        trumpSelect.gameObject.SetActive(false);
+    }
+
+    [Client]
+    public void CltOnTrumpUpdated(CardColor trump, bool isReady)
+    {
+        // TODO: Update the trump display for this client
+        if (isReady) {
+            CmdOnTrumpSelectReady(trump);
+            trumpSelect.gameObject.SetActive(false);
+        } else {
+            localPlayer.CltSetTrumpColor(trump);
+        }
+    }
+
+    [Command]
+    public void CmdOnTrumpSelectReady(CardColor trump)
+    {
+        SrvSetTrumpColor(trump);
+        SrvChangeGameState(GameState.PLAY);
+    }
+
+    [Server]
+    public void SrvSetTrumpColor(CardColor trump)
+    {
+        trumpColor = trump;
+        foreach (GameObject c in allCards) {
+            Card card = c.GetComponent<Card>();
+            card.RpcSetTrump(trumpColor);
+        }
+    }
+
+    public CardAreas GetPlayerArea(int position) {
+        return position switch
+        {
+            0 => CardAreas.PLAYER0,
+            1 => CardAreas.PLAYER1,
+            2 => CardAreas.PLAYER2,
+            3 => CardAreas.PLAYER3,
+            _ => CardAreas.DECK,
+        };
+    }
+
+    [ClientRpc]
+    public void RpcBeginPlay()
+    {
+        dropArea.GetComponent<BoxCollider2D>().enabled = true;
     }
 }

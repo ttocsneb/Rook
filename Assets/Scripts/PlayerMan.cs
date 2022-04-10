@@ -35,6 +35,9 @@ public class PlayerMan : NetworkBehaviour
     [Server]
     public void SrvCardMoved(GameObject card, CardAreas area)
     {
+        if (card.GetComponent<Card>().getArea() == CardAreas.KITTY) {
+            Debug.Log("Moving Card from kitty to my had");
+        }
         cards.Add(card);
         card.GetComponent<Card>().SrvSetArea(area);
         RpcCardMoved(card, area);
@@ -252,6 +255,15 @@ public class PlayerMan : NetworkBehaviour
     public bool HasPassed()
     {
         return hasPassed;
+    }
+
+    [Client]
+    public void CltSetTrumpColor(CardColor trump)
+    {
+        foreach (GameObject c in cards) {
+            Card card = c.GetComponent<Card>();
+            card.CltSetTrump(trump);
+        }
     }
 
 }

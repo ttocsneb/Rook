@@ -22,13 +22,14 @@ public class DragDrop : MonoBehaviour
     {
         Card card = GetComponent<Card>();
         Debug.Log("hasAuthority: " + card.hasAuthority + ", isPlayable" + card.CltIsPlayable() + ", myTurn: " + card.gameManager.CltMyTurn());
-        return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn() && card.gameManager.GetGameState() == GameState.PLAY;
+        return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn();
     }
 
     private void OnCollisionEnter2D(Collision2D collision) 
     {
         isOverDropZone = true;
         dropZone = collision.gameObject;
+        Debug.LogFormat("Collision entered with {0}", dropZone.name);
     }
 
     private void OnCollisionExit2D(Collision2D collision) 
@@ -53,11 +54,13 @@ public class DragDrop : MonoBehaviour
             isDragging = false;
             if (isOverDropZone && canPlay())
             {
+                Debug.Log("Trying to play card");
                 transform.SetParent(Canvas.transform);
                 GetComponent<Card>().CmdPlay();
+            } else {
+                transform.position = startPosition;
+                transform.SetParent(startParent.transform, false);
             }
-            transform.position = startPosition;
-            transform.SetParent(startParent.transform, false);
         }
     }
 

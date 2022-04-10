@@ -140,7 +140,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7633907261233106969, guid: ac7a57e78fa64d948932cd2d696cad93, type: 3}
       propertyPath: m_RootOrder
-      value: 11
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 7633907261233106969, guid: ac7a57e78fa64d948932cd2d696cad93, type: 3}
       propertyPath: m_AnchorMax.x
@@ -229,11 +229,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7633907261233106969, guid: ac7a57e78fa64d948932cd2d696cad93, type: 3}
   m_PrefabInstance: {fileID: 27574906}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &27574908 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7633907261233106970, guid: ac7a57e78fa64d948932cd2d696cad93, type: 3}
+--- !u!114 &27574909 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7633907261233106950, guid: ac7a57e78fa64d948932cd2d696cad93, type: 3}
   m_PrefabInstance: {fileID: 27574906}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba096f3dfcd6a431c84613b28c4b7248, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &144114574
 GameObject:
   m_ObjectHideFlags: 0
@@ -415,7 +421,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1602872700}
-  m_RootOrder: 6
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -580,7 +586,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7371484452293993251, guid: b5b763f9ecf668a4f891d42ef208c8f6, type: 3}
       propertyPath: m_RootOrder
-      value: 10
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 7371484452293993251, guid: b5b763f9ecf668a4f891d42ef208c8f6, type: 3}
       propertyPath: m_AnchorMax.x
@@ -682,6 +688,32 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6264414801325504015, guid: 3c3b1768ea22bef4e8840dfc71960315, type: 3}
   m_PrefabInstance: {fileID: 2045271226}
   m_PrefabAsset: {fileID: 0}
+--- !u!61 &496473602
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 496473600}
+  m_Enabled: 0
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 348, y: 493}
+  m_EdgeRadius: 0
 --- !u!114 &496473604
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -908,8 +940,7 @@ MonoBehaviour:
   syncMode: 0
   syncInterval: 0.1
   bidSelect: {fileID: 451387119}
-  trumpSelect: {fileID: 27574908}
-  canvas: {fileID: 1602872696}
+  trumpSelect: {fileID: 27574909}
   enemyArea1: {fileID: 1729341689}
   enemyArea2: {fileID: 1102463579}
   enemyArea3: {fileID: 996393650}
@@ -999,7 +1030,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1159062500852570115, guid: b317764e7873920449094b203466027a, type: 3}
       propertyPath: m_RootOrder
-      value: 8
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 1159062500852570115, guid: b317764e7873920449094b203466027a, type: 3}
       propertyPath: m_AnchorMax.x
@@ -1333,9 +1364,9 @@ RectTransform:
   - {fileID: 573287481}
   - {fileID: 496473601}
   - {fileID: 1441073169}
+  - {fileID: 401607779}
   - {fileID: 1083196365}
   - {fileID: 1729341690}
-  - {fileID: 401607779}
   - {fileID: 996393651}
   - {fileID: 1102463580}
   - {fileID: 451387118}
@@ -1500,7 +1531,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1159062500852570115, guid: b317764e7873920449094b203466027a, type: 3}
       propertyPath: m_RootOrder
-      value: 9
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1159062500852570115, guid: b317764e7873920449094b203466027a, type: 3}
       propertyPath: m_AnchorMax.x
@@ -1841,6 +1872,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 1602872700}
     m_Modifications:
+    - target: {fileID: 3718433032899471322, guid: f8f5ca9f14560584e98a3ed4eba8f592, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6343459825493773312, guid: f8f5ca9f14560584e98a3ed4eba8f592, type: 3}
       propertyPath: m_Name
       value: DropArea
