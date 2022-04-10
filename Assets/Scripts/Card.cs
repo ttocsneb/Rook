@@ -177,8 +177,6 @@ public class Card : NetworkBehaviour
     public void RpcCardChanged(CardColor color, int number)
     {
         display.SetCard(color, number);
-        this.color = color;
-        this.number = number;
     }
 
     /// Check if the card is playable
