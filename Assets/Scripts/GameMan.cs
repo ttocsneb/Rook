@@ -79,11 +79,6 @@ public class GameMan : NetworkBehaviour
         trumpSelect.AddCallback(CltOnTrumpUpdated);
     }
 
-    [SyncVar]
-    private int team1Score = 0;
-    [SyncVar]
-    private int team2Score = 0;
-
     [Server]
     public void SrvBeginGame() 
     {
@@ -94,21 +89,25 @@ public class GameMan : NetworkBehaviour
         current_turn = 0;
     }
 
-    [ClientRpc]
-    public void SrvUpdateScoreText(){
-        GameObject scoreTextArea = scoreArea.transform.GetChild(0).gameObject;
-        scoreTextArea.GetComponent<UnityEngine.UI.Text>().text = System.String.Format("Team1: {0} Team2: {1}",team1Score,team2Score);
-        team1Score += 1;
-        Debug.Log("Updating Score Text");
+    [SyncVar(hook = nameof(CltChangeTeamScore))]
+    private int team1Score = 0;
+    [SyncVar(hook = nameof(CltChangeTeamScore))]
+    private int team2Score = 0;
+
+
+    [Client]
+    public void CltChangeTeamScore(int oldValue, int newValue)
+    {
+        CltUpdateScoreText();
     }
 
-    [Command(requiresAuthority=false)]
-    public void CmdUpdateScore()
-    {
-        Debug.Log("Updating Score");
-        SrvUpdateScoreText(); 
-        team2Score += 1;
+    [Client]
+    public void CltUpdateScoreText(){
+        GameObject scoreTextArea = scoreArea.transform.GetChild(0).gameObject;
+        scoreTextArea.GetComponent<UnityEngine.UI.Text>().text = System.String.Format("Team 1: {0} Team 2: {1}",team1Score,team2Score);
+        // Debug.Log("Updating Score Text");
     }
+
     private int dealPosition = 0;
 
     [Server]
@@ -673,8 +672,8 @@ public class GameMan : NetworkBehaviour
 
     [Server]
     private void srvCheckTrick() {
-        Debug.Log("Checking Trick Now");
-        Debug.Log(drop.Count);
+        // Debug.Log("Checking Trick Now");
+        // Debug.Log(drop.Count);
         if(drop.Count == 1){//get inx of starting player for sanity checks
             trickStarterIdx = current_turn;
         }
@@ -728,6 +727,7 @@ public class GameMan : NetworkBehaviour
                             winningCardIdx = i;
                         }
                     }
+
                 }
             }//end for
 
@@ -741,6 +741,12 @@ public class GameMan : NetworkBehaviour
             int winner = (trickStarterIdx + winningCardIdx) % 4;
             Debug.Log("Player " + winner + " receives " + pointTotal + " points.");
 
+            if (winner % 2 == 0) {
+                team1Score += pointTotal;
+            }
+            else {
+                team2Score += pointTotal;
+            }
             trickStarterIdx = winner; //set to winner idx
         }
     }
