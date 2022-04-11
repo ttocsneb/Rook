@@ -33,6 +33,7 @@ public class Card : NetworkBehaviour
     private bool isVisible = false;
 
     private CardDisplay display;
+    private CardAreas myArea;
 
     public string GetCardName()
     {
@@ -88,6 +89,18 @@ public class Card : NetworkBehaviour
         RpcCardChanged(color, number);
     }
 
+    [Server]
+    public void SrvSetArea(CardAreas area)
+    {
+        myArea = area;
+    }
+
+    [Server]
+    public CardAreas getArea()
+    {
+        return myArea;
+    }
+
     public CardColor GetColor()
     {
         if (isVisible || isServer) 
@@ -116,9 +129,12 @@ public class Card : NetworkBehaviour
     [Command]
     public void CmdPlay()
     {
-        Debug.Log("Play Card");
-        gameManager.SrvMoveCard(gameObject, CardAreas.DROPAREA);
-        gameManager.SrvNextTurn();
+        if (gameManager.GetGameState() == GameState.TRUMP_SELECT) {
+            gameManager.SrvMoveCard(gameObject, CardAreas.KITTY);
+        } else {
+            gameManager.SrvMoveCard(gameObject, CardAreas.DROPAREA);
+            gameManager.SrvNextTurn();
+        }
     }
 
     /// Called when the visibility of this card has changed
@@ -151,11 +167,17 @@ public class Card : NetworkBehaviour
     /// @param trumpColor the trump color
     ///
     /// If trumpColor is NONE, then no trump color should be set
-    [ClientRpc]
-    public void RpcSetTrump(CardColor trumpColor)
+    [Client]
+    public void CltSetTrump(CardColor trumpColor)
     {
         isTrump = color == trumpColor;
         display.SetTrump(isTrump);
+    }
+
+    [ClientRpc]
+    public void RpcSetTrump(CardColor trumpColor)
+    {
+        CltSetTrump(trumpColor);
     }
 
     /// Change the face color of the current trick
@@ -163,9 +185,10 @@ public class Card : NetworkBehaviour
     /// @param trickColor the trick color
     ///
     /// If trumpColor is NONE, then no trump color should be set
-    public void SetTrickColor(CardColor trickColor)
+    [Client]
+    public void CltSetTrickColor(CardColor trickColor)
     {
-        isPlayable = trickColor == CardColor.NONE || color == CardColor.ROOK || color == trickColor;
+        isPlayable = color == CardColor.ROOK || color == trickColor;
         display.SetPlayable(isPlayable);
     }
 
@@ -182,7 +205,7 @@ public class Card : NetworkBehaviour
     /// Check if the card is playable
     [Client]
     public bool CltIsPlayable() {
-        return isPlayable;
+        return isPlayable || isTrump;
     }
 
     [Client]
