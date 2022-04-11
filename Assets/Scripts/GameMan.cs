@@ -164,8 +164,8 @@ public class GameMan : NetworkBehaviour
             }
             if (passed_count >= 3 || bid >= 120) {
                 RpcStopBidding();
-                SrvChangeGameState(GameState.TRUMP_SELECT);
                 current_turn = winning_player;
+                SrvChangeGameState(GameState.TRUMP_SELECT);
                 return;
             }
         }
