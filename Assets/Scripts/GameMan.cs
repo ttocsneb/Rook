@@ -222,6 +222,7 @@ public class GameMan : NetworkBehaviour
                     RpcUpdateClientHand(card);
                 }
                 RpcCardMoved(card, destination);
+                srvCheckTrick();
                 return;
             case CardAreas.KITTY:
                 c.SrvSetArea(CardAreas.KITTY);
@@ -650,10 +651,13 @@ public class GameMan : NetworkBehaviour
 
     [Server]
     private void srvCheckTrick() {
+        Debug.Log("Checking Trick Now");
+        Debug.Log(drop.Count);
         if(drop.Count == 1){//get inx of starting player for sanity checks
             trickStarterIdx = current_turn;
         }
-        if(drop.Count == 4){
+        if(drop.Count >= 7){
+            Debug.Log("End of Trick");
             Card winningCard = drop[0].GetComponent<Card>();
             int winningCardIdx = 0;
             int pointTotal = 0;
