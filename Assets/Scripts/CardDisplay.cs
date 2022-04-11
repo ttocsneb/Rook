@@ -76,7 +76,7 @@ public class CardDisplay : MonoBehaviour
             }
             if (front == null)
             {
-                Debug.Log("The card has not been loaded yet!");
+                Debug.LogError("The card has not been loaded yet!");
             }
             i.sprite = front;
         }

@@ -21,7 +21,6 @@ public class DragDrop : MonoBehaviour
     private bool canPlay()
     {
         Card card = GetComponent<Card>();
-        Debug.Log("hasAuthority: " + card.hasAuthority + ", isPlayable" + card.CltIsPlayable() + ", myTurn: " + card.gameManager.CltMyTurn());
         return card.hasAuthority && card.CltIsPlayable() && card.gameManager.CltMyTurn();
     }
 
@@ -55,9 +54,10 @@ public class DragDrop : MonoBehaviour
             {
                 transform.SetParent(Canvas.transform);
                 GetComponent<Card>().CmdPlay();
+            } else {
+                transform.position = startPosition;
+                transform.SetParent(startParent.transform, false);
             }
-            transform.position = startPosition;
-            transform.SetParent(startParent.transform, false);
         }
     }
 

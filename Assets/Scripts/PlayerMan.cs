@@ -1,46 +1,68 @@
 using Mirror;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class PlayerMan : NetworkBehaviour
 {
-
-    // Make private, using searches
-    public GameObject enemyArea1;
-    public GameObject enemyArea2;
-    public GameObject enemyArea3;
-    public GameObject playerArea;
-
     private GameMan gameManager;
 
     private GameObject myArea;
     private Quaternion rotation;
+
+    [SyncVar(hook = nameof(OnBidChanged))]
+    private int bid = 0;
+
+    [SyncVar(hook = nameof(OnPassChanged))]
+    private bool hasPassed = false;
 
     private readonly List<GameObject> cards = new List<GameObject>();
 
     [SyncVar(hook = nameof(CltOnPlayerPosUpdate))]
     public int playerPosition = -1;
 
+    private int relativePosition = -1;
+
     public override void OnStartClient()
     {
-        Debug.Log("OnStart");
+        Debug.Log("Finding Game Manager");
         gameManager = GameObject.Find("GameManger").GetComponent<GameMan>();
         gameManager.CltRegisterPlayer(this);
-        enemyArea1 = gameManager.enemyArea1;
-        enemyArea2 = gameManager.enemyArea2;
-        enemyArea3 = gameManager.enemyArea3;
-        playerArea = gameManager.playerArea;
         CltUpdateMyArea();
         base.OnStartClient();
+    }
+
+    [Server]
+    public void SrvCardMoved(GameObject card, CardAreas area)
+    {
+        if (card.GetComponent<Card>().getArea() == CardAreas.KITTY) {
+            Debug.Log("Moving Card from kitty to my had");
+        }
+        cards.Add(card);
+        card.GetComponent<Card>().SrvSetArea(area);
+        RpcCardMoved(card, area);
     }
 
     // Called when a card is moved to this player's hand
     [ClientRpc]
     public void RpcCardMoved(GameObject card, CardAreas area)
     {
+        cards.Add(card);
         card.transform.SetParent(myArea.transform, false);
         card.transform.rotation = rotation;
+    }
+
+    [Server]
+    public void SrvCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
+        RpcCardRemoved(card);
+    }
+
+    [ClientRpc]
+    public void RpcCardRemoved(GameObject card)
+    {
+        cards.Remove(card);
     }
 
     /// Determine which player slot that the this player should be played in
@@ -60,7 +82,7 @@ public class PlayerMan : NetworkBehaviour
         }
         Debug.Log("Updating my area");
         int playerOwner = gameManager.CltGetPlayerOwner();
-        int relativePosition = playerPosition - playerOwner;
+        relativePosition = playerPosition - playerOwner;
         if (relativePosition < 0) {
             relativePosition += 4;
         }
@@ -69,31 +91,172 @@ public class PlayerMan : NetworkBehaviour
         switch (relativePosition)
         {
             case 0:
-                myArea = playerArea;
+                myArea = gameManager.playerArea;
                 rotation = Quaternion.Euler(0, 0, 0);
                 break;
             case 1:
-                myArea = enemyArea1;
+                myArea = gameManager.enemyArea1;
                 rotation = Quaternion.Euler(0, 0, 90);
                 break;
             case 2:
-                myArea = enemyArea2;
+                myArea = gameManager.enemyArea2;
                 rotation = Quaternion.Euler(0, 0, 180);
                 break;
             case 3:
-                myArea = enemyArea3;
+                myArea = gameManager.enemyArea3;
                 rotation = Quaternion.Euler(0, 0, 270);
                 break;
             default:
                 Debug.Log("Invalid relative position " + relativePosition + "!");
                 break;
         }
+
+        foreach (GameObject card in cards) {
+            card.transform.SetParent(myArea.transform, false);
+            card.transform.rotation = rotation;
+        }
+
+    }
+
+    [Client]
+    public void CltOnBidMade(int bid)
+    {
+        gameManager.bidSelect.CanBid(false);
+        CmdMakeBid(bid);
+    }
+
+    [Client]
+    public void CltOnBidPass()
+    {
+        gameManager.bidSelect.CanBid(false);
+        CmdPassBid();
+    }
+
+    [Command]
+    public void CmdMakeBid(int bid)
+    {
+        this.bid = bid;
+        gameManager.SrvNextBid(bid);
+        gameManager.SrvNextTurn();
+    }
+
+    [Command]
+    public void CmdPassBid()
+    {
+        hasPassed = true;
+        gameManager.SrvNextTurn();
+    }
+
+    [ClientRpc]
+    public void RpcStartBidding()
+    {
+        if (hasAuthority) {
+            BidSelect bidSelect = gameManager.bidSelect;
+
+            bidSelect.CanBid(gameManager.CltMyTurn());
+            bidSelect.playerBidTxt.gameObject.SetActive(false);
+            bidSelect.SetMinimumBid(70);
+        } 
+    }
+
+    [Server]
+    public void SrvStartBidding()
+    {
+        RpcStartBidding();
     }
 
     [Client]
     void CltOnPlayerPosUpdate(int oldPos, int newPos)
     {
         CltUpdateMyArea();
+    }
+
+    [Client]
+    private void updateBid()
+    {
+        TextMeshProUGUI myBid = cltGetBidText();
+        if (myBid == null) {
+            Debug.LogWarning("My bid is still null...");
+            return;
+        }
+        string text = "" + bid;
+        if (hasPassed) {
+            text += " (passed)";
+        }
+        myBid.text = text;
+    }
+
+    [Client]
+    private TextMeshProUGUI cltGetBidText()
+    {
+        if (gameManager == null) {
+            Debug.LogWarning("gameManager is null!");
+            return null;
+        }
+        BidSelect bidSelect = gameManager.bidSelect;
+        return relativePosition switch
+        {
+            0 => bidSelect.playerBidTxt,
+            1 => bidSelect.enemyBid1BidTxt,
+            2 => bidSelect.enemyBid2BidTxt,
+            3 => bidSelect.enemyBid3BidTxt,
+            _ => null,
+        };
+    }
+
+    [Server]
+    public void SrvOnMyTurn()
+    {
+        RpcOnMyTurn();
+    }
+
+    [ClientRpc]
+    void RpcOnMyTurn()
+    {
+        if (hasAuthority) {
+            if (gameManager.GetGameState() == GameState.BID) {
+                BidSelect bidSelect = gameManager.bidSelect;
+                if (hasPassed) {
+                    CmdPassBid();
+                } else {
+                    bidSelect.CanBid(true);
+                }
+            }
+        }
+    }
+
+    [Client]
+    void OnBidChanged(int oldBid, int newBid)
+    {
+        updateBid();
+    }
+
+    [Client]
+    void OnPassChanged(bool oldBid, bool newBid)
+    {
+        updateBid();
+        if (newBid && hasAuthority) {
+            gameManager.bidSelect.ShowInterface(false);
+        }
+    }
+
+    public int GetBid()
+    {
+        return bid;
+    }
+
+    public bool HasPassed()
+    {
+        return hasPassed;
+    }
+
+    [Client]
+    public void CltSetTrumpColor(CardColor trump)
+    {
+        foreach (GameObject c in cards) {
+            Card card = c.GetComponent<Card>();
+            card.CltSetTrump(trump);
+        }
     }
 
 }
