@@ -94,8 +94,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f3c6b3795f3b542c2ad0584cbaa0f6bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  texture: {fileID: 2800000, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
-  back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
+  texture: {fileID: 2800000, guid: 79077e1eb860e51439cf2b2aac33b4d6, type: 3}
+  back: {fileID: 1736599942560124913, guid: 79077e1eb860e51439cf2b2aac33b4d6, type: 3}
   width: 7
   height: 9
 --- !u!114 &7991549428748399095
@@ -112,10 +112,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
-  texture: {fileID: 2800000, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
-  back: {fileID: 9164874825317427162, guid: 79e1ad9068f994a12a41973a28e1e3e9, type: 3}
-  width: 7
-  height: 9
   gameManager: {fileID: 0}
 --- !u!114 &7991549428748399101
 MonoBehaviour:
