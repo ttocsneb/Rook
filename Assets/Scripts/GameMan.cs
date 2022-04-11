@@ -42,6 +42,8 @@ public class GameMan : NetworkBehaviour
 
     public GameObject cardPrefab;
 
+    public GameObject scoreArea;
+
     [SyncVar(hook = nameof(onPlayerTurn))]
     private int current_turn = -1;
     [SyncVar]
@@ -85,6 +87,25 @@ public class GameMan : NetworkBehaviour
         srvDealAllCards();
         SrvChangeGameState(GameState.BID);
         current_turn = 0;
+    }
+
+    [SyncVar(hook = nameof(CltChangeTeamScore))]
+    private int team1Score = 0;
+    [SyncVar(hook = nameof(CltChangeTeamScore))]
+    private int team2Score = 0;
+
+
+    [Client]
+    public void CltChangeTeamScore(int oldValue, int newValue)
+    {
+        CltUpdateScoreText();
+    }
+
+    [Client]
+    public void CltUpdateScoreText(){
+        GameObject scoreTextArea = scoreArea.transform.GetChild(0).gameObject;
+        scoreTextArea.GetComponent<UnityEngine.UI.Text>().text = System.String.Format("Team 1: {0} Team 2: {1}",team1Score,team2Score);
+        // Debug.Log("Updating Score Text");
     }
 
     private int dealPosition = 0;
@@ -651,8 +672,8 @@ public class GameMan : NetworkBehaviour
 
     [Server]
     private void srvCheckTrick() {
-        Debug.Log("Checking Trick Now");
-        Debug.Log(drop.Count);
+        // Debug.Log("Checking Trick Now");
+        // Debug.Log(drop.Count);
         if(drop.Count == 1){//get inx of starting player for sanity checks
             trickStarterIdx = current_turn;
         }
@@ -706,6 +727,7 @@ public class GameMan : NetworkBehaviour
                             winningCardIdx = i;
                         }
                     }
+
                 }
             }//end for
 
@@ -719,6 +741,12 @@ public class GameMan : NetworkBehaviour
             int winner = (trickStarterIdx + winningCardIdx) % 4;
             Debug.Log("Player " + winner + " receives " + pointTotal + " points.");
 
+            if (winner % 2 == 0) {
+                team1Score += pointTotal;
+            }
+            else {
+                team2Score += pointTotal;
+            }
             trickStarterIdx = winner; //set to winner idx
         }
     }
