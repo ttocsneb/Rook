@@ -445,7 +445,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1030727434}
         m_TargetAssemblyTypeName: GameMan, Assembly-CSharp
-        m_MethodName: SrvUpdateScores
+        m_MethodName: CmdUpdateScore
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1519,7 +1519,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Team 1: 0 Points'
+  m_Text: 'Team1: 0 Team2: 0'
 --- !u!222 &1762429545
 CanvasRenderer:
   m_ObjectHideFlags: 0

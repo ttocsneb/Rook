@@ -57,6 +57,11 @@ public class GameMan : NetworkBehaviour
 
     private bool hasDealt = false;
 
+    [SyncVar]
+    private int team1Score = 0;
+    [SyncVar]
+    private int team2Score = 0;
+
     [Server]
     public void SrvBeginGame() 
     {
@@ -65,12 +70,20 @@ public class GameMan : NetworkBehaviour
         srvSpawnCards();
     }
 
-    [Server]
-    public void SrvUpdateScores(){
-        // testing:
-        GameObject team1Score = scoreArea.transform.GetChild(0).gameObject;
-        String text = team1Score.GetComponent<UnityEngine.UI.Text>().text;
-        Debug.Log("Score: " + text);
+    [ClientRpc]
+    public void SrvUpdateScoreText(){
+        GameObject scoreTextArea = scoreArea.transform.GetChild(0).gameObject;
+        scoreTextArea.GetComponent<UnityEngine.UI.Text>().text = System.String.Format("Team1: {0} Team2: {1}",team1Score,team2Score);
+        team1Score += 1;
+        Debug.Log("Updating Score Text");
+    }
+
+    [Command(requiresAuthority=false)]
+    public void CmdUpdateScore()
+    {
+        Debug.Log("Updating Score");
+        SrvUpdateScoreText(); 
+        team2Score += 1;
     }
 
     [Server]
